@@ -1,64 +1,113 @@
 import React from 'react';
-import { Outlet, Link } from 'react-router-dom';
-import { 
-  LayoutDashboard, 
-  Package, 
-  ShoppingCart, 
-  Truck, 
-  Users, 
-  BarChart3, 
-  Settings 
+import { Outlet, NavLink, useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+import {
+  LayoutDashboard,
+  Package,
+  ShoppingCart,
+  ShoppingBag,
+  DollarSign,
+  Users,
+  Building2,
+  Truck,
+  BarChart3,
+  TrendingUp,
+  ClipboardList,
+  Settings,
+  LogOut,
+  Bell,
+  Search,
 } from 'lucide-react';
 
+const navItems = [
+  { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+  { to: '/inventory', icon: Package, label: 'Inventory' },
+  { to: '/sales', icon: ShoppingCart, label: 'Sales' },
+  { to: '/purchases', icon: ShoppingBag, label: 'Purchases' },
+  { to: '/finance', icon: DollarSign, label: 'Finance' },
+  { to: '/customers', icon: Users, label: 'Customers' },
+  { to: '/suppliers', icon: Building2, label: 'Suppliers' },
+  { to: '/logistics', icon: Truck, label: 'Logistics' },
+  { to: '/reports', icon: BarChart3, label: 'Reports' },
+  { to: '/analytics', icon: TrendingUp, label: 'Analytics' },
+  { to: '/activity-log', icon: ClipboardList, label: 'Activity Log' },
+  { to: '/settings', icon: Settings, label: 'Settings' },
+];
+
 const DashboardLayout = () => {
+  const { user, userProfile, logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate('/login');
+    } catch (err) {
+      console.error('Logout error:', err);
+    }
+  };
+
+  const displayName = userProfile?.displayName || user?.email?.split('@')[0] || 'User';
+  const initials = displayName.charAt(0).toUpperCase();
+
   return (
     <div className="app-container">
       {/* Sidebar */}
-      <aside className="sidebar">
-        <div style={{ marginBottom: '40px' }}>
-          <h2 style={{ color: 'var(--color-accent-lime)' }}>KAGABO</h2>
-          <div style={{ fontSize: '12px', opacity: 0.8, letterSpacing: '1px' }}>FINANCE LOGISTICS</div>
+      <aside className="sidebar" id="sidebar">
+        <div className="sidebar-brand">
+          <img src="/bw_sided_logo.jpg" alt="KAGABO Finance & Logistics" className="sidebar-logo" />
         </div>
 
-        <nav style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          <Link to="/" className="sidebar-link active">
-            <LayoutDashboard size={20} /> Dashboard
-          </Link>
-          <Link to="/inventory" className="sidebar-link">
-            <Package size={20} /> Inventory
-          </Link>
-          <Link to="#" className="sidebar-link">
-            <ShoppingCart size={20} /> Sales
-          </Link>
-          <Link to="#" className="sidebar-link">
-            <Truck size={20} /> Logistics
-          </Link>
-          <Link to="#" className="sidebar-link">
-            <Users size={20} /> Contacts
-          </Link>
-          <Link to="#" className="sidebar-link">
-            <BarChart3 size={20} /> Reports
-          </Link>
-          
-          <div style={{ marginTop: 'auto', paddingTop: '20px' }}>
-            <Link to="#" className="sidebar-link">
-              <Settings size={20} /> Settings
-            </Link>
-          </div>
+        <nav className="sidebar-nav">
+          {navItems.map((item) => (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              className={({ isActive }) => `sidebar-link${isActive ? ' active' : ''}`}
+              id={`nav-${item.label.toLowerCase().replace(/\s+/g, '-')}`}
+            >
+              <item.icon size={20} />
+              <span>{item.label}</span>
+            </NavLink>
+          ))}
         </nav>
+
+        <div className="sidebar-footer">
+          <button
+            onClick={handleLogout}
+            className="sidebar-link sidebar-logout-btn"
+            id="nav-signout"
+          >
+            <LogOut size={20} />
+            <span>Sign Out</span>
+          </button>
+        </div>
       </aside>
 
       {/* Main Content Area */}
       <main className="main-content">
-        <header className="header">
-          <div>
-            <h3>Welcome back, Kagabo</h3>
-            <p style={{ color: 'var(--color-text-secondary)', fontSize: '14px' }}>Here's what's happening with your business today.</p>
+        <header className="header" id="main-header">
+          <div className="header-search">
+            <Search size={18} className="search-icon" />
+            <input
+              type="text"
+              placeholder="Search products, customers, invoices…"
+              className="header-search-input"
+              id="global-search"
+            />
           </div>
-          <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-            <span className="badge badge-success">System Online</span>
-            <div style={{ width: '40px', height: '40px', borderRadius: '50%', backgroundColor: 'var(--color-primary-dark-elevated)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 'bold' }}>
-              K
+
+          <div className="header-right">
+            <button className="header-notification-btn" id="notifications-btn" aria-label="Notifications">
+              <Bell size={20} />
+              <span className="notification-dot" />
+            </button>
+            <div className="header-user">
+              <div className="header-avatar" id="user-avatar">{initials}</div>
+              <div className="header-user-info">
+                <span className="header-user-name">{displayName}</span>
+                <span className="header-user-role">{userProfile?.role || 'User'}</span>
+              </div>
             </div>
           </div>
         </header>
@@ -67,27 +116,6 @@ const DashboardLayout = () => {
           <Outlet />
         </div>
       </main>
-
-      <style>{`
-        .sidebar-link {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          padding: 12px 16px;
-          color: white;
-          text-decoration: none;
-          border-radius: 8px;
-          transition: background-color 0.2s;
-        }
-        .sidebar-link:hover {
-          background-color: rgba(255, 255, 255, 0.1);
-        }
-        .sidebar-link.active {
-          background-color: var(--color-accent-lime);
-          color: var(--color-primary-dark);
-          font-weight: 600;
-        }
-      `}</style>
     </div>
   );
 };

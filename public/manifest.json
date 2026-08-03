@@ -1,0 +1,16 @@
+{
+  "name": "KAGABO Finance & Logistics",
+  "short_name": "KAGABO",
+  "description": "Cloud-native ERP platform for small and medium-sized businesses — inventory, finance, sales, purchasing, logistics, and analytics in one application.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0E2A2C",
+  "theme_color": "#0E2A2C",
+  "icons": [
+    {
+      "src": "/icon.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg"
+    }
+  ]
+}
