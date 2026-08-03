@@ -1,13 +1,55 @@
-import React, { useState } from 'react';
-import { Save, Building2, DollarSign, FileText, Shield } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Save, Building2, DollarSign, FileText, Shield, Users } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
+import { collection, getDocs, doc, updateDoc } from 'firebase/firestore';
+import { db } from '../firebase';
 
 const SettingsPage = () => {
+  const { userProfile } = useAuth();
+  const isOwner = userProfile?.role === 'owner';
+
   const [businessName, setBusinessName] = useState('KAGABO Finance & Logistics');
   const [currency, setCurrency] = useState('USD');
   const [taxRate, setTaxRate] = useState('18');
   const [invoicePrefix, setInvoicePrefix] = useState('INV-');
   const [paymentTerms, setPaymentTerms] = useState('30');
   const [saved, setSaved] = useState(false);
+
+  const [usersList, setUsersList] = useState([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+
+  useEffect(() => {
+    if (isOwner) {
+      fetchUsers();
+    }
+  }, [isOwner]);
+
+  const fetchUsers = async () => {
+    setLoadingUsers(true);
+    try {
+      const snapshot = await getDocs(collection(db, 'users'));
+      const fetchedUsers = [];
+      snapshot.forEach(doc => {
+        fetchedUsers.push({ id: doc.id, ...doc.data() });
+      });
+      setUsersList(fetchedUsers);
+    } catch (err) {
+      console.error('Error fetching users:', err);
+    }
+    setLoadingUsers(false);
+  };
+
+  const updateUserRole = async (userId, newRole) => {
+    try {
+      await updateDoc(doc(db, 'users', userId), {
+        role: newRole,
+        status: newRole === 'pending' ? 'pending_approval' : 'approved'
+      });
+      fetchUsers();
+    } catch (err) {
+      console.error('Error updating user role:', err);
+    }
+  };
 
   const handleSave = () => {
     setSaved(true);
@@ -58,6 +100,45 @@ const SettingsPage = () => {
             <div className="form-group"><label>Session Timeout</label><select defaultValue="30" id="setting-timeout"><option value="15">15 minutes</option><option value="30">30 minutes</option><option value="60">1 hour</option><option value="120">2 hours</option></select></div>
           </div>
         </div>
+
+        {/* Team Management (Owner Only) */}
+        {isOwner && (
+          <div className="glass-card-light settings-section" style={{ gridColumn: '1 / -1' }}>
+            <div className="settings-section-header"><Users size={20} /><h3>Team Management</h3></div>
+            <p className="page-subtitle" style={{ marginBottom: '16px' }}>Manage user roles and permissions. You can make other users owners here.</p>
+            
+            {loadingUsers ? (
+              <div className="loading-spinner-small"></div>
+            ) : (
+              <table className="data-table">
+                <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th>Actions</th></tr></thead>
+                <tbody>
+                  {usersList.map(u => (
+                    <tr key={u.id}>
+                      <td>{u.displayName}</td>
+                      <td>{u.email}</td>
+                      <td style={{ textTransform: 'capitalize' }}>{u.role}</td>
+                      <td><span className={`badge ${u.status === 'approved' ? 'badge-success' : 'badge-warning'}`}>{u.status.replace('_', ' ')}</span></td>
+                      <td>
+                        <select 
+                          value={u.role} 
+                          onChange={(e) => updateUserRole(u.id, e.target.value)}
+                          style={{ width: 'auto', padding: '6px 10px' }}
+                        >
+                          <option value="owner">Owner</option>
+                          <option value="admin">Admin</option>
+                          <option value="user">User</option>
+                          <option value="pending">Pending</option>
+                        </select>
+                      </td>
+                    </tr>
+                  ))}
+                  {usersList.length === 0 && <tr><td colSpan="5">No users found.</td></tr>}
+                </tbody>
+              </table>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

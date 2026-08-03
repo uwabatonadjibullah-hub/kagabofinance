@@ -6,7 +6,7 @@ import {
   signOut, 
   sendPasswordResetEmail 
 } from 'firebase/auth';
-import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, setDoc, serverTimestamp, collection, getDocs, query, limit } from 'firebase/firestore';
 import { auth, db } from '../firebase';
 
 const AuthContext = createContext(null);
@@ -55,12 +55,22 @@ export const AuthProvider = ({ children }) => {
 
   const register = async (email, password, displayName) => {
     const cred = await createUserWithEmailAndPassword(auth, email, password);
-    // Create a user profile document in Firestore with pending status
+    
+    // Check if this is the first user
+    const usersRef = collection(db, 'users');
+    const q = query(usersRef, limit(1));
+    const querySnapshot = await getDocs(q);
+    const isFirstUser = querySnapshot.empty;
+
+    const role = isFirstUser ? 'owner' : 'pending';
+    const status = isFirstUser ? 'approved' : 'pending_approval';
+
+    // Create a user profile document in Firestore
     await setDoc(doc(db, 'users', cred.user.uid), {
       email,
       displayName: displayName || email.split('@')[0],
-      role: 'pending',
-      status: 'pending_approval',
+      role,
+      status,
       createdAt: serverTimestamp(),
     });
     return cred;
