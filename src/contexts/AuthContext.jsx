@@ -65,14 +65,20 @@ export const AuthProvider = ({ children }) => {
     const role = isFirstUser ? 'owner' : 'pending';
     const status = isFirstUser ? 'approved' : 'pending_approval';
 
-    // Create a user profile document in Firestore
-    await setDoc(doc(db, 'users', cred.user.uid), {
+    const newProfile = {
       email,
       displayName: displayName || email.split('@')[0],
       role,
       status,
       createdAt: serverTimestamp(),
-    });
+    };
+
+    // Create a user profile document in Firestore
+    await setDoc(doc(db, 'users', cred.user.uid), newProfile);
+    
+    // Set local profile state immediately
+    setUserProfile(newProfile);
+    
     return cred;
   };
 

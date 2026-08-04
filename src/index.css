@@ -294,7 +294,20 @@ label {
   align-items: center;
   justify-content: center;
   padding: 48px;
-  background: var(--color-background);
+  background: #FFFFFF;
+  color: #101C1D;
+}
+
+.auth-right .auth-form-header p,
+.auth-right label,
+.auth-right .auth-footer {
+  color: #5B6B6C;
+}
+
+.auth-right input {
+  background: #FFFFFF;
+  color: #101C1D;
+  border-color: #E4E7E3;
 }
 
 .auth-form-container {
