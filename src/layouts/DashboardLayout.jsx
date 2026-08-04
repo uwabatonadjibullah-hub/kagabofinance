@@ -2,6 +2,7 @@ import React from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import NotificationDropdown from '../components/NotificationDropdown';
+import HelpDropdown from '../components/HelpDropdown';
 import {
   LayoutDashboard,
   Package,
@@ -109,6 +110,7 @@ const DashboardLayout = () => {
           </div>
 
           <div className="header-right">
+            <HelpDropdown />
             <NotificationDropdown />
             <div className="header-user">
               <div className="header-avatar" id="user-avatar">{initials}</div>

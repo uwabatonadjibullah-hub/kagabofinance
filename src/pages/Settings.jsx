@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Save, Building2, DollarSign, FileText, Shield, Users } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { collection, getDocs, doc, updateDoc } from 'firebase/firestore';
+import { collection, getDocs, doc, getDoc, setDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
 
 const SettingsPage = () => {
@@ -13,16 +13,38 @@ const SettingsPage = () => {
   const [taxRate, setTaxRate] = useState('18');
   const [invoicePrefix, setInvoicePrefix] = useState('INV-');
   const [paymentTerms, setPaymentTerms] = useState('30');
+  const [email, setEmail] = useState('info@kagabofinance.com');
+  const [phone, setPhone] = useState('+250 788 000 000');
+  const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
   const [usersList, setUsersList] = useState([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
 
   useEffect(() => {
+    fetchSettings();
     if (isOwner) {
       fetchUsers();
     }
   }, [isOwner]);
+
+  const fetchSettings = async () => {
+    try {
+      const snap = await getDoc(doc(db, 'settings', 'general'));
+      if (snap.exists()) {
+        const data = snap.data();
+        if (data.businessName) setBusinessName(data.businessName);
+        if (data.currency) setCurrency(data.currency);
+        if (data.taxRate) setTaxRate(data.taxRate);
+        if (data.invoicePrefix) setInvoicePrefix(data.invoicePrefix);
+        if (data.paymentTerms) setPaymentTerms(data.paymentTerms);
+        if (data.email) setEmail(data.email);
+        if (data.phone) setPhone(data.phone);
+      }
+    } catch (err) {
+      console.error('Error fetching settings:', err);
+    }
+  };
 
   const fetchUsers = async () => {
     setLoadingUsers(true);
@@ -51,9 +73,32 @@ const SettingsPage = () => {
     }
   };
 
-  const handleSave = () => {
-    setSaved(true);
-    setTimeout(() => setSaved(false), 3000);
+  const handleSave = async () => {
+    if (!isOwner) {
+      alert("Only owners can modify settings.");
+      return;
+    }
+    setSaving(true);
+    try {
+      await setDoc(doc(db, 'settings', 'general'), {
+        businessName,
+        currency,
+        taxRate,
+        invoicePrefix,
+        paymentTerms,
+        email,
+        phone,
+        updatedAt: serverTimestamp(),
+        updatedBy: userProfile?.displayName || userProfile?.email || 'Owner'
+      }, { merge: true });
+
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+    } catch (err) {
+      console.error('Error saving settings:', err);
+      alert('Failed to save settings: ' + err.message);
+    }
+    setSaving(false);
   };
 
   return (
@@ -68,10 +113,10 @@ const SettingsPage = () => {
         <div className="glass-card-light settings-section">
           <div className="settings-section-header"><Building2 size={20} /><h3>Business Information</h3></div>
           <div className="settings-form">
-            <div className="form-group"><label>Business Name</label><input type="text" value={businessName} onChange={e => setBusinessName(e.target.value)} id="setting-business-name" /></div>
-            <div className="form-group"><label>Business Logo</label><div className="logo-upload-area"><img src="/icon.jpg" alt="Logo" style={{ width: '60px', height: '60px', borderRadius: '12px', objectFit: 'cover' }} /><button className="btn btn-secondary" style={{ marginLeft: '16px' }}>Upload New Logo</button></div></div>
-            <div className="form-group"><label>Contact Email</label><input type="email" defaultValue="info@kagabofinance.com" id="setting-email" /></div>
-            <div className="form-group"><label>Phone Number</label><input type="tel" defaultValue="+250 788 000 000" id="setting-phone" /></div>
+            <div className="form-group"><label>Business Name</label><input type="text" value={businessName} onChange={e => setBusinessName(e.target.value)} id="setting-business-name" disabled={!isOwner} /></div>
+            <div className="form-group"><label>Business Logo</label><div className="logo-upload-area"><img src="/icon.jpg" alt="Logo" style={{ width: '60px', height: '60px', borderRadius: '12px', objectFit: 'cover' }} /></div></div>
+            <div className="form-group"><label>Contact Email</label><input type="email" value={email} onChange={e => setEmail(e.target.value)} id="setting-email" disabled={!isOwner} /></div>
+            <div className="form-group"><label>Phone Number</label><input type="tel" value={phone} onChange={e => setPhone(e.target.value)} id="setting-phone" disabled={!isOwner} /></div>
           </div>
         </div>
 
@@ -79,8 +124,8 @@ const SettingsPage = () => {
         <div className="glass-card-light settings-section">
           <div className="settings-section-header"><DollarSign size={20} /><h3>Financial Settings</h3></div>
           <div className="settings-form">
-            <div className="form-group"><label>Currency</label><select value={currency} onChange={e => setCurrency(e.target.value)} id="setting-currency"><option value="USD">USD ($)</option><option value="EUR">EUR (€)</option><option value="RWF">RWF (FRw)</option><option value="GBP">GBP (£)</option></select></div>
-            <div className="form-group"><label>Tax Rate (%)</label><input type="number" value={taxRate} onChange={e => setTaxRate(e.target.value)} id="setting-tax" /></div>
+            <div className="form-group"><label>Currency</label><select value={currency} onChange={e => setCurrency(e.target.value)} id="setting-currency" disabled={!isOwner}><option value="USD">USD ($)</option><option value="EUR">EUR (€)</option><option value="RWF">RWF (FRw)</option><option value="GBP">GBP (£)</option></select></div>
+            <div className="form-group"><label>Tax Rate (%)</label><input type="number" value={taxRate} onChange={e => setTaxRate(e.target.value)} id="setting-tax" disabled={!isOwner} /></div>
           </div>
         </div>
 
@@ -88,8 +133,8 @@ const SettingsPage = () => {
         <div className="glass-card-light settings-section">
           <div className="settings-section-header"><FileText size={20} /><h3>Invoice Settings</h3></div>
           <div className="settings-form">
-            <div className="form-group"><label>Invoice Prefix</label><input type="text" value={invoicePrefix} onChange={e => setInvoicePrefix(e.target.value)} id="setting-invoice-prefix" /></div>
-            <div className="form-group"><label>Default Payment Terms (Days)</label><input type="number" value={paymentTerms} onChange={e => setPaymentTerms(e.target.value)} id="setting-payment-terms" /></div>
+            <div className="form-group"><label>Invoice Prefix</label><input type="text" value={invoicePrefix} onChange={e => setInvoicePrefix(e.target.value)} id="setting-invoice-prefix" disabled={!isOwner} /></div>
+            <div className="form-group"><label>Default Payment Terms (Days)</label><input type="number" value={paymentTerms} onChange={e => setPaymentTerms(e.target.value)} id="setting-payment-terms" disabled={!isOwner} /></div>
           </div>
         </div>
 

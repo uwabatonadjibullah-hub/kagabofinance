@@ -34,7 +34,8 @@ service cloud.firestore {
     
     // Owner only collections
     match /settings/{document=**} {
-      allow read, write: if isOwner();
+      allow read: if isSignedIn();
+      allow write: if isOwner();
     }
     match /activityLogs/{document=**} {
       allow read: if isOwner();
