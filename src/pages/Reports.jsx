@@ -26,7 +26,7 @@ const Reports = () => {
 
   // ---- PDF Generation ----
   const generatePDF = (title, headers, rows) => {
-    const doc = new jsPDF();
+    const doc = new jsPDF({ orientation: 'landscape' });
     doc.setFontSize(18);
     doc.setTextColor(14, 42, 44);
     doc.text('KAGABO Finance & Logistics', 14, 20);
@@ -70,15 +70,15 @@ const Reports = () => {
       s.productName || '',
       s.sellType === 'quantity' ? 'Qty' : 'Item',
       s.amount ?? '',
-      `$${(s.unitPrice || 0).toFixed(2)}`,
-      `$${(s.total || 0).toFixed(2)}`,
-      `$${(s.paid || 0).toFixed(2)}`,
-      `$${(s.balance || 0).toFixed(2)}`,
+      `RWF ${(s.unitPrice || 0).toFixed(2)}`,
+      `RWF ${(s.total || 0).toFixed(2)}`,
+      `RWF ${(s.paid || 0).toFixed(2)}`,
+      `RWF ${(s.balance || 0).toFixed(2)}`,
       s.method || '',
       s.status || '',
       s.date || ''
     ]);
-    const totalRow = ['', '', '', '', '', 'TOTALS', `$${data.reduce((s,r) => s + (r.total||0), 0).toFixed(2)}`, `$${data.reduce((s,r) => s + (r.paid||0), 0).toFixed(2)}`, `$${data.reduce((s,r) => s + (r.balance||0), 0).toFixed(2)}`, '', '', ''];
+    const totalRow = ['', '', '', '', '', 'TOTALS', `RWF ${data.reduce((s,r) => s + (r.total||0), 0).toFixed(2)}`, `RWF ${data.reduce((s,r) => s + (r.paid||0), 0).toFixed(2)}`, `RWF ${data.reduce((s,r) => s + (r.balance||0), 0).toFixed(2)}`, '', '', ''];
     rows.push(totalRow);
     format === 'pdf' ? generatePDF('Sales Report', headers, rows) : generateExcel('Sales Report', headers, rows);
   };
@@ -93,11 +93,11 @@ const Reports = () => {
       p.quantity ?? '',
       p.ipq ?? '',
       p.totalItems ?? '',
-      `$${(p.total || 0).toFixed(2)}`,
+      `RWF ${(p.total || 0).toFixed(2)}`,
       p.status || '',
       p.date || ''
     ]);
-    const totalRow = ['', '', '', '', '', 'TOTAL', `$${data.reduce((s,r) => s + (r.total||0), 0).toFixed(2)}`, '', ''];
+    const totalRow = ['', '', '', '', '', 'TOTAL', `RWF ${data.reduce((s,r) => s + (r.total||0), 0).toFixed(2)}`, '', ''];
     rows.push(totalRow);
     format === 'pdf' ? generatePDF('Purchases Report', headers, rows) : generateExcel('Purchases Report', headers, rows);
   };
@@ -112,9 +112,9 @@ const Reports = () => {
       else if (qty <= (p.minStock || 0)) status = 'Low Stock';
       return [
         p.name, p.category, p.supplier,
-        `$${(p.buyPrice || 0).toFixed(2)}`,
-        `$${(p.sellPriceQty || p.sellPrice || 0).toFixed(2)}`,
-        `$${(p.sellPriceItem || 0).toFixed(2)}`,
+        `RWF ${(p.buyPrice || 0).toFixed(2)}`,
+        `RWF ${(p.sellPriceQty || p.sellPrice || 0).toFixed(2)}`,
+        `RWF ${(p.sellPriceItem || 0).toFixed(2)}`,
         qty, p.ipq || 1, totalItems, status
       ];
     });
@@ -126,14 +126,14 @@ const Reports = () => {
     const filteredExpenses = filterByDate(expenses);
     const headers = ['Type', 'Category', 'Description', 'Amount', 'Date'];
     const rows = [
-      ...filteredIncome.map(i => ['Income', i.category || '', i.description || '', `$${(i.amount || 0).toFixed(2)}`, i.date || '']),
-      ...filteredExpenses.map(e => ['Expense', e.category || '', e.description || '', `-$${(e.amount || 0).toFixed(2)}`, e.date || '']),
+      ...filteredIncome.map(i => ['Income', i.category || '', i.description || '', `RWF ${(i.amount || 0).toFixed(2)}`, i.date || '']),
+      ...filteredExpenses.map(e => ['Expense', e.category || '', e.description || '', `-RWF ${(e.amount || 0).toFixed(2)}`, e.date || '']),
     ];
     const totalInc = filteredIncome.reduce((s,i) => s + (i.amount||0), 0);
     const totalExp = filteredExpenses.reduce((s,e) => s + (e.amount||0), 0);
-    rows.push(['', '', 'Total Income', `$${totalInc.toFixed(2)}`, '']);
-    rows.push(['', '', 'Total Expenses', `-$${totalExp.toFixed(2)}`, '']);
-    rows.push(['', '', 'NET PROFIT', `$${(totalInc - totalExp).toFixed(2)}`, '']);
+    rows.push(['', '', 'Total Income', `RWF ${totalInc.toFixed(2)}`, '']);
+    rows.push(['', '', 'Total Expenses', `-RWF ${totalExp.toFixed(2)}`, '']);
+    rows.push(['', '', 'NET PROFIT', `RWF ${(totalInc - totalExp).toFixed(2)}`, '']);
     format === 'pdf' ? generatePDF('Finance Report', headers, rows) : generateExcel('Finance Report', headers, rows);
   };
 

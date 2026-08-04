@@ -70,7 +70,7 @@ const Suppliers = () => {
                     </div>
                   </td>
                   <td><span className="badge badge-info">{s.categories}</span></td>
-                  <td className="numeric" style={{ color: s.balance > 0 ? 'var(--color-danger)' : 'inherit' }}>${s.balance?.toFixed(2) || '0.00'}</td>
+                  <td className="numeric" style={{ color: s.balance > 0 ? 'var(--color-danger)' : 'inherit' }}>RWF {s.balance?.toFixed(2) || '0.00'}</td>
                   <td><span className={`badge ${s.status === 'Active' ? 'badge-success' : 'badge-warning'}`}>{s.status}</span></td>
                 </tr>
               ))}

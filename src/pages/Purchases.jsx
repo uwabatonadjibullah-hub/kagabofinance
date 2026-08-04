@@ -190,7 +190,7 @@ const Purchases = () => {
                   <td className="numeric">{p.quantity ?? p.products ?? '—'}</td>
                   <td className="numeric">{p.ipq || '—'}</td>
                   <td className="numeric" style={{ fontWeight: 600 }}>{p.totalItems ?? '—'}</td>
-                  <td className="numeric">${(p.total || 0).toFixed(2)}</td>
+                  <td className="numeric">RWF {(p.total || 0).toFixed(2)}</td>
                   <td>{statusBadge(p.status)}</td>
                   <td>{p.date}</td>
                   {canEdit && (

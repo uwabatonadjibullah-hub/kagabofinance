@@ -73,19 +73,19 @@ const Analytics = () => {
           <div className="dashboard-grid" style={{ marginBottom: '32px' }}>
             <div className="glass-card-light stat-card">
               <div className="stat-icon" style={{ color: 'var(--color-success)', background: 'rgba(63, 191, 127, 0.1)' }}><TrendingUp size={24} /></div>
-              <div className="stat-content"><p className="stat-label">Total Revenue (Sales + Finance)</p><h3 className="stat-value">${totalRevenue.toFixed(2)}</h3></div>
+              <div className="stat-content"><p className="stat-label">Total Revenue (Sales + Finance)</p><h3 className="stat-value">RWF {totalRevenue.toFixed(2)}</h3></div>
             </div>
             <div className="glass-card-light stat-card">
               <div className="stat-icon" style={{ color: 'var(--color-danger)', background: 'rgba(225, 91, 91, 0.1)' }}><TrendingDown size={24} /></div>
-              <div className="stat-content"><p className="stat-label">Total Outflow (Expenses + Purchases)</p><h3 className="stat-value">${(totalExpenses + totalPurchaseCost).toFixed(2)}</h3></div>
+              <div className="stat-content"><p className="stat-label">Total Outflow (Expenses + Purchases)</p><h3 className="stat-value">RWF {(totalExpenses + totalPurchaseCost).toFixed(2)}</h3></div>
             </div>
             <div className="glass-card-light stat-card">
               <div className="stat-icon" style={{ color: 'var(--color-accent-lime)', background: 'var(--color-primary-dark)' }}><DollarSign size={24} /></div>
-              <div className="stat-content"><p className="stat-label">Net Profit</p><h3 className="stat-value" style={{ color: netProfit >= 0 ? 'inherit' : 'var(--color-danger)'}}>${netProfit.toFixed(2)}</h3></div>
+              <div className="stat-content"><p className="stat-label">Net Profit</p><h3 className="stat-value" style={{ color: netProfit >= 0 ? 'inherit' : 'var(--color-danger)'}}>RWF {netProfit.toFixed(2)}</h3></div>
             </div>
             <div className="glass-card-light stat-card">
               <div className="stat-icon"><Package size={24} /></div>
-              <div className="stat-content"><p className="stat-label">Capital in Inventory</p><h3 className="stat-value">${inventoryValue.toFixed(2)}</h3></div>
+              <div className="stat-content"><p className="stat-label">Capital in Inventory</p><h3 className="stat-value">RWF {inventoryValue.toFixed(2)}</h3></div>
             </div>
           </div>
 
@@ -109,7 +109,7 @@ const Analytics = () => {
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-border-subtle)" />
                   <XAxis dataKey="name" tick={{fontSize: 11, fill: 'var(--color-text-secondary)'}} axisLine={false} tickLine={false} />
-                  <YAxis tick={{fontSize: 11, fill: 'var(--color-text-secondary)'}} axisLine={false} tickLine={false} tickFormatter={(v) => `$${v}`} />
+                  <YAxis tick={{fontSize: 11, fill: 'var(--color-text-secondary)'}} axisLine={false} tickLine={false} tickFormatter={(v) => `RWF ${v}`} />
                   <Tooltip contentStyle={{ backgroundColor: '#fff', borderRadius: '12px', border: '1px solid #E4E7E3', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }} />
                   <Legend iconType="circle" wrapperStyle={{ fontSize: '13px', paddingTop: '10px' }} />
                   <Area type="monotone" dataKey="revenue" name="Revenue" stroke="var(--color-success)" strokeWidth={2.5} fillOpacity={1} fill="url(#gradRevenue)" />
@@ -135,7 +135,7 @@ const Analytics = () => {
                       <Pie data={expensePieData} cx="50%" cy="50%" innerRadius={60} outerRadius={100} dataKey="value" paddingAngle={3} label={({name, percent}) => `${name} ${(percent * 100).toFixed(0)}%`} labelLine={false}>
                         {expensePieData.map((_, idx) => <Cell key={idx} fill={COLORS[idx % COLORS.length]} />)}
                       </Pie>
-                      <Tooltip formatter={(value) => `$${value.toFixed(2)}`} />
+                      <Tooltip formatter={(value) => `RWF ${value.toFixed(2)}`} />
                     </RPieChart>
                   </ResponsiveContainer>
                 </div>
@@ -156,7 +156,7 @@ const Analytics = () => {
                       <Pie data={incomePieData} cx="50%" cy="50%" innerRadius={60} outerRadius={100} dataKey="value" paddingAngle={3} label={({name, percent}) => `${name} ${(percent * 100).toFixed(0)}%`} labelLine={false}>
                         {incomePieData.map((_, idx) => <Cell key={idx} fill={COLORS[idx % COLORS.length]} />)}
                       </Pie>
-                      <Tooltip formatter={(value) => `$${value.toFixed(2)}`} />
+                      <Tooltip formatter={(value) => `RWF ${value.toFixed(2)}`} />
                     </RPieChart>
                   </ResponsiveContainer>
                 </div>

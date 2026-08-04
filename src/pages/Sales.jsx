@@ -212,8 +212,8 @@ const Sales = () => {
               <div style={{ width: '100%', padding: '12px 16px', background: 'rgba(225, 91, 91, 0.08)', borderRadius: '10px', fontSize: '14px', display: 'flex', gap: '16px', alignItems: 'center', flexWrap: 'wrap' }}>
                 <ArrowDownCircle size={16} color="var(--color-danger)" />
                 <span><strong>Selling:</strong> {formData.amount} {formData.sellType === 'quantity' ? 'boxes' : 'items'} of {selectedProduct.name}</span>
-                <span>@ <strong>${unitPrice.toFixed(2)}</strong>/{formData.sellType === 'quantity' ? 'qty' : 'item'}</span>
-                <span style={{ fontWeight: 700, color: 'var(--color-primary-dark)' }}>Total: ${calculatedTotal.toFixed(2)}</span>
+                <span>@ <strong>RWF {unitPrice.toFixed(2)}</strong>/{formData.sellType === 'quantity' ? 'qty' : 'item'}</span>
+                <span style={{ fontWeight: 700, color: 'var(--color-primary-dark)' }}>Total: RWF {calculatedTotal.toFixed(2)}</span>
               </div>
             )}
             
@@ -245,10 +245,10 @@ const Sales = () => {
                   <td><span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Package size={14} /> {s.productName || '—'}</span></td>
                   <td><span className={`badge ${s.sellType === 'quantity' ? 'badge-info' : 'badge-warning'}`}>{s.sellType === 'quantity' ? 'Qty' : 'Item'}</span></td>
                   <td className="numeric">{s.amount ?? s.products ?? '—'}</td>
-                  <td className="numeric">${(s.unitPrice || 0).toFixed(2)}</td>
-                  <td className="numeric">${(s.total || 0).toFixed(2)}</td>
-                  <td className="numeric">${(s.paid || 0).toFixed(2)}</td>
-                  <td className="numeric">${(s.balance || 0).toFixed(2)}</td>
+                  <td className="numeric">RWF {(s.unitPrice || 0).toFixed(2)}</td>
+                  <td className="numeric">RWF {(s.total || 0).toFixed(2)}</td>
+                  <td className="numeric">RWF {(s.paid || 0).toFixed(2)}</td>
+                  <td className="numeric">RWF {(s.balance || 0).toFixed(2)}</td>
                   <td>{s.method}</td>
                   <td>{statusBadge(s.status)}</td>
                   <td>{s.date}</td>

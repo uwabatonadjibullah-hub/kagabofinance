@@ -80,7 +80,7 @@ const Logistics = () => {
                       {d.vehicle && <span style={{ fontSize: '12px', color: 'var(--color-text-secondary)', display: 'flex', alignItems: 'center', gap: '4px' }}><Truck size={12}/> {d.vehicle}</span>}
                     </div>
                   </td>
-                  <td className="numeric">${d.cost?.toFixed(2)}</td>
+                  <td className="numeric">RWF {d.cost?.toFixed(2)}</td>
                   <td>{statusBadge(d.status)}</td>
                   <td>{d.date}</td>
                 </tr>

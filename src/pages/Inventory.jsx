@@ -157,9 +157,9 @@ const Inventory = () => {
                   <td className="cell-bold"><Package size={16} /> {p.name}</td>
                   <td>{p.category}</td>
                   <td>{p.supplier}</td>
-                  <td className="numeric">${(p.buyPrice || 0).toFixed(2)}</td>
-                  <td className="numeric">${(p.sellPriceQty || p.sellPrice || 0).toFixed(2)}</td>
-                  <td className="numeric">${(p.sellPriceItem || 0).toFixed(2)}</td>
+                  <td className="numeric">RWF {(p.buyPrice || 0).toFixed(2)}</td>
+                  <td className="numeric">RWF {(p.sellPriceQty || p.sellPrice || 0).toFixed(2)}</td>
+                  <td className="numeric">RWF {(p.sellPriceItem || 0).toFixed(2)}</td>
                   <td className="numeric">
                     <span style={{ fontWeight: 600 }}>{displayQty}</span>
                     {looseItems > 0 && <span style={{ color: 'var(--color-warning)', fontSize: '12px', marginLeft: '4px' }}>+{looseItems}</span>}

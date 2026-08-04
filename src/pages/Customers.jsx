@@ -69,7 +69,7 @@ const Customers = () => {
                     </div>
                   </td>
                   <td><span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><MapPin size={14}/> {c.location}</span></td>
-                  <td className="numeric" style={{ color: c.balance > 0 ? 'var(--color-danger)' : 'inherit' }}>${c.balance?.toFixed(2) || '0.00'}</td>
+                  <td className="numeric" style={{ color: c.balance > 0 ? 'var(--color-danger)' : 'inherit' }}>RWF {c.balance?.toFixed(2) || '0.00'}</td>
                   <td>{c.lastPurchase}</td>
                   <td><span className={`badge ${c.status === 'Active' ? 'badge-success' : 'badge-warning'}`}>{c.status}</span></td>
                 </tr>

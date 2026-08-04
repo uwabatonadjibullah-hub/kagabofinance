@@ -67,7 +67,7 @@ const Dashboard = () => {
           <div className="stat-icon"><DollarSign size={24} /></div>
           <div className="stat-content">
             <p className="stat-label">Today's Revenue</p>
-            <h3 className="stat-value">${todayRevenue.toFixed(2)}</h3>
+            <h3 className="stat-value">RWF {todayRevenue.toFixed(2)}</h3>
           </div>
         </div>
 
@@ -75,7 +75,7 @@ const Dashboard = () => {
           <div className="stat-icon" style={{ color: 'var(--color-primary-dark)' }}><Package size={24} /></div>
           <div className="stat-content">
             <p className="stat-label">Inventory Value</p>
-            <h3 className="stat-value">${inventoryValue.toFixed(2)}</h3>
+            <h3 className="stat-value">RWF {inventoryValue.toFixed(2)}</h3>
           </div>
         </div>
 
@@ -83,7 +83,7 @@ const Dashboard = () => {
           <div className="stat-icon" style={{ color: 'var(--color-warning)' }}><Users size={24} /></div>
           <div className="stat-content">
             <p className="stat-label">Outstanding Debts</p>
-            <h3 className="stat-value">${totalOutstanding.toFixed(2)}</h3>
+            <h3 className="stat-value">RWF {totalOutstanding.toFixed(2)}</h3>
           </div>
         </div>
 
@@ -114,7 +114,7 @@ const Dashboard = () => {
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-border-subtle)" />
                   <XAxis dataKey="name" tick={{fontSize: 12, fill: 'var(--color-text-secondary)'}} axisLine={false} tickLine={false} />
-                  <YAxis tick={{fontSize: 12, fill: 'var(--color-text-secondary)'}} axisLine={false} tickLine={false} tickFormatter={(value) => `$${value}`} />
+                  <YAxis tick={{fontSize: 12, fill: 'var(--color-text-secondary)'}} axisLine={false} tickLine={false} tickFormatter={(value) => `RWF ${value}`} />
                   <Tooltip 
                     contentStyle={{ backgroundColor: 'var(--color-surface-light)', borderRadius: '12px', border: '1px solid var(--color-border-subtle)', boxShadow: 'var(--shadow-md)' }}
                     itemStyle={{ color: 'var(--color-text-primary)', fontWeight: 500 }}
@@ -135,7 +135,7 @@ const Dashboard = () => {
                 <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-border-subtle)" />
                   <XAxis dataKey="name" tick={{fontSize: 12, fill: 'var(--color-text-secondary)'}} axisLine={false} tickLine={false} />
-                  <YAxis tick={{fontSize: 12, fill: 'var(--color-text-secondary)'}} axisLine={false} tickLine={false} tickFormatter={(value) => `$${value}`} />
+                  <YAxis tick={{fontSize: 12, fill: 'var(--color-text-secondary)'}} axisLine={false} tickLine={false} tickFormatter={(value) => `RWF ${value}`} />
                   <Tooltip 
                     cursor={{fill: 'rgba(0,0,0,0.02)'}}
                     contentStyle={{ backgroundColor: 'var(--color-surface-light)', borderRadius: '12px', border: '1px solid var(--color-border-subtle)', boxShadow: 'var(--shadow-md)' }}

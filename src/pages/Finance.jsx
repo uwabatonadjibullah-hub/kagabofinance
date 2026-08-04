@@ -56,15 +56,15 @@ const Finance = () => {
       <div className="dashboard-grid" style={{ marginBottom: '32px' }}>
         <div className="glass-card-light stat-card">
           <div className="stat-icon" style={{ color: 'var(--color-success)', background: 'rgba(63, 191, 127, 0.1)' }}><ArrowUpRight size={24} /></div>
-          <div className="stat-content"><p className="stat-label">Total Income</p><h3 className="stat-value">${totalIncome.toFixed(2)}</h3></div>
+          <div className="stat-content"><p className="stat-label">Total Income</p><h3 className="stat-value">RWF {totalIncome.toFixed(2)}</h3></div>
         </div>
         <div className="glass-card-light stat-card">
           <div className="stat-icon" style={{ color: 'var(--color-danger)', background: 'rgba(225, 91, 91, 0.1)' }}><ArrowDownRight size={24} /></div>
-          <div className="stat-content"><p className="stat-label">Total Expenses</p><h3 className="stat-value">${totalExpenses.toFixed(2)}</h3></div>
+          <div className="stat-content"><p className="stat-label">Total Expenses</p><h3 className="stat-value">RWF {totalExpenses.toFixed(2)}</h3></div>
         </div>
         <div className="glass-card-light stat-card">
           <div className="stat-icon" style={{ color: 'var(--color-accent-lime)', background: 'var(--color-primary-dark)' }}><DollarSign size={24} /></div>
-          <div className="stat-content"><p className="stat-label">Net Profit</p><h3 className="stat-value" style={{ color: netProfit >= 0 ? 'inherit' : 'var(--color-danger)'}}>${netProfit.toFixed(2)}</h3></div>
+          <div className="stat-content"><p className="stat-label">Net Profit</p><h3 className="stat-value" style={{ color: netProfit >= 0 ? 'inherit' : 'var(--color-danger)'}}>RWF {netProfit.toFixed(2)}</h3></div>
         </div>
       </div>
 
@@ -101,7 +101,7 @@ const Finance = () => {
                   <td>{item.category}</td>
                   <td>{item.description}</td>
                   <td className={`numeric ${activeTab === 'income' ? 'text-success' : 'text-danger'}`}>
-                    {activeTab === 'income' ? '+' : '-'}${item.amount.toFixed(2)}
+                    {activeTab === 'income' ? '+' : '-'}RWF {item.amount.toFixed(2)}
                   </td>
                   <td>{item.date}</td>
                 </tr>

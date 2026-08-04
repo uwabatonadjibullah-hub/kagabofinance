@@ -9,7 +9,7 @@ const SettingsPage = () => {
   const isOwner = userProfile?.role === 'owner';
 
   const [businessName, setBusinessName] = useState('KAGABO Finance & Logistics');
-  const [currency, setCurrency] = useState('USD');
+  const [currency, setCurrency] = useState('RWF');
   const [taxRate, setTaxRate] = useState('18');
   const [invoicePrefix, setInvoicePrefix] = useState('INV-');
   const [paymentTerms, setPaymentTerms] = useState('30');
