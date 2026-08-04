@@ -594,7 +594,6 @@ label {
 /* =============================================
    9. PAGE MODULES — SHARED
    ============================================= */
-.module-page {}
 
 .page-header {
   display: flex;
@@ -755,7 +754,6 @@ label {
 /* =============================================
    11. DASHBOARD SPECIFIC
    ============================================= */
-.dashboard-page {}
 
 .stats-grid {
   display: grid;
