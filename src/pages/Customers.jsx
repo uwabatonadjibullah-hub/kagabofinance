@@ -1,48 +1,83 @@
 import React, { useState } from 'react';
-import { Plus, Search, Phone, Mail, Eye, Edit } from 'lucide-react';
-
-const sampleCustomers = [
-  { id: 'C001', name: 'Acme Corp', phone: '+250 788 123 456', email: 'acme@example.com', purchases: 12, balance: 0 },
-  { id: 'C002', name: 'Smith Trading', phone: '+250 788 234 567', email: 'smith@example.com', purchases: 8, balance: 1400.00 },
-  { id: 'C003', name: 'Global Imports', phone: '+250 788 345 678', email: 'global@example.com', purchases: 5, balance: 890.00 },
-  { id: 'C004', name: 'QuickMart', phone: '+250 788 456 789', email: 'quick@example.com', purchases: 22, balance: 0 },
-  { id: 'C005', name: 'Riverside Co', phone: '+250 788 567 890', email: 'river@example.com', purchases: 3, balance: 0 },
-];
+import { Users, Search, Plus, Mail, Phone, MapPin } from 'lucide-react';
+import { useCollection, useFirestore } from '../hooks/useFirestore';
 
 const Customers = () => {
   const [searchTerm, setSearchTerm] = useState('');
-  const filtered = sampleCustomers.filter(c =>
-    c.name.toLowerCase().includes(searchTerm.toLowerCase()) || c.email.toLowerCase().includes(searchTerm.toLowerCase())
+  const [showForm, setShowForm] = useState(false);
+  const [formData, setFormData] = useState({ name: '', phone: '', email: '', location: '' });
+
+  const { data: customers, loading } = useCollection('customers');
+  const { addDocument } = useFirestore('customers');
+
+  const filtered = customers.filter(c =>
+    c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (c.email && c.email.toLowerCase().includes(searchTerm.toLowerCase()))
   );
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    await addDocument({
+      ...formData,
+      balance: 0,
+      lastPurchase: '-',
+      status: 'Active'
+    });
+    setShowForm(false);
+    setFormData({ name: '', phone: '', email: '', location: '' });
+  };
 
   return (
     <div className="module-page">
       <div className="page-header">
-        <div><h1>Customers</h1><p className="page-subtitle">Manage customer relationships and balances</p></div>
-        <button className="btn btn-primary" id="add-customer-btn"><Plus size={18} /> Add Customer</button>
+        <div><h1>Customers</h1><p className="page-subtitle">Manage customer profiles and balances</p></div>
+        <button className="btn btn-primary" onClick={() => setShowForm(!showForm)}>
+          <Plus size={18} /> {showForm ? 'Cancel' : 'Add Customer'}
+        </button>
       </div>
 
+      {showForm && (
+        <div className="glass-card-light" style={{ padding: '24px', marginBottom: '24px' }}>
+          <form onSubmit={handleSubmit} style={{ display: 'flex', flexWrap: 'wrap', gap: '16px' }}>
+            <div className="form-group"><label>Name</label><input required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} /></div>
+            <div className="form-group"><label>Phone</label><input required value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} /></div>
+            <div className="form-group"><label>Email</label><input type="email" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} /></div>
+            <div className="form-group"><label>Location</label><input value={formData.location} onChange={e => setFormData({...formData, location: e.target.value})} /></div>
+            <div style={{ width: '100%', marginTop: '8px' }}><button type="submit" className="btn btn-primary">Save Customer</button></div>
+          </form>
+        </div>
+      )}
+
       <div className="module-toolbar">
-        <div className="toolbar-search"><Search size={18} /><input type="text" placeholder="Search customers…" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} id="customers-search" /></div>
+        <div className="toolbar-search"><Search size={18} /><input type="text" placeholder="Search customers…" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} /></div>
       </div>
 
       <div className="glass-card-light table-container">
-        <table className="data-table" id="customers-table">
-          <thead><tr><th>ID</th><th>Name</th><th>Phone</th><th>Email</th><th>Purchases</th><th>Balance</th><th>Actions</th></tr></thead>
-          <tbody>
-            {filtered.map(c => (
-              <tr key={c.id}>
-                <td className="cell-bold">{c.id}</td>
-                <td>{c.name}</td>
-                <td><Phone size={14} style={{ marginRight: '4px', opacity: 0.6 }} />{c.phone}</td>
-                <td><Mail size={14} style={{ marginRight: '4px', opacity: 0.6 }} />{c.email}</td>
-                <td className="numeric">{c.purchases}</td>
-                <td className="numeric">{c.balance > 0 ? <span style={{ color: 'var(--color-danger)' }}>${c.balance.toFixed(2)}</span> : <span style={{ color: 'var(--color-success)' }}>$0.00</span>}</td>
-                <td className="cell-actions"><button className="icon-btn" aria-label="View"><Eye size={16} /></button><button className="icon-btn" aria-label="Edit"><Edit size={16} /></button></td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        {loading ? (
+           <div style={{ padding: '40px', textAlign: 'center' }}><div className="loading-spinner-small" style={{ margin: '0 auto' }}></div></div>
+        ) : (
+          <table className="data-table">
+            <thead><tr><th>Name</th><th>Contact</th><th>Location</th><th>Outstanding Balance</th><th>Last Purchase</th><th>Status</th></tr></thead>
+            <tbody>
+              {filtered.map(c => (
+                <tr key={c.id}>
+                  <td className="cell-bold"><div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><div className="avatar-circle">{c.name.charAt(0)}</div> {c.name}</div></td>
+                  <td>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px' }}><Phone size={12}/> {c.phone}</span>
+                      {c.email && <span style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px', color: 'var(--color-text-secondary)' }}><Mail size={12}/> {c.email}</span>}
+                    </div>
+                  </td>
+                  <td><span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><MapPin size={14}/> {c.location}</span></td>
+                  <td className="numeric" style={{ color: c.balance > 0 ? 'var(--color-danger)' : 'inherit' }}>${c.balance?.toFixed(2) || '0.00'}</td>
+                  <td>{c.lastPurchase}</td>
+                  <td><span className={`badge ${c.status === 'Active' ? 'badge-success' : 'badge-warning'}`}>{c.status}</span></td>
+                </tr>
+              ))}
+              {filtered.length === 0 && <tr><td colSpan="6" style={{ textAlign: 'center' }}>No customers found.</td></tr>}
+            </tbody>
+          </table>
+        )}
       </div>
     </div>
   );

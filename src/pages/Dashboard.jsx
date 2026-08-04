@@ -1,134 +1,106 @@
-import React, { useState } from 'react';
-import { ArrowUpRight, ArrowDownRight, Package, Users, DollarSign, TrendingUp, ShoppingCart, AlertTriangle } from 'lucide-react';
-
-const StatCard = ({ title, value, change, isPositive, icon: Icon }) => (
-  <div className="glass-card-light stat-card" id={`stat-${title.toLowerCase().replace(/\s+/g, '-')}`}>
-    <div className="stat-card-top">
-      <span className="stat-card-label">{title}</span>
-      <div className="stat-card-icon-badge">
-        <Icon size={20} />
-      </div>
-    </div>
-    <div className="stat-card-value">{value}</div>
-    <div className={`stat-card-change ${isPositive ? 'positive' : 'negative'}`}>
-      {isPositive ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}
-      <span className="stat-change-amount">{change}</span>
-      <span className="stat-change-label">vs last month</span>
-    </div>
-  </div>
-);
-
-const QuickAction = ({ label, icon: Icon, onClick }) => (
-  <button className="quick-action-btn" onClick={onClick}>
-    <div className="quick-action-icon"><Icon size={20} /></div>
-    <span>{label}</span>
-  </button>
-);
+import React from 'react';
+import { Package, DollarSign, TrendingUp, Users, ArrowUpRight, ArrowDownRight, Clock } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+import { useCollection } from '../hooks/useFirestore';
 
 const Dashboard = () => {
-  const [period, setPeriod] = useState('month');
+  const { userProfile } = useAuth();
+  
+  // Real-time data feeds
+  const { data: products } = useCollection('products');
+  const { data: sales } = useCollection('sales');
+  const { data: purchases } = useCollection('purchases');
+  const { data: customers } = useCollection('customers');
+  const { data: activities } = useCollection('activityLogs', 'timestamp', 'desc');
+
+  // Calculations
+  const inventoryValue = products.reduce((sum, p) => sum + (p.buyPrice * p.qty), 0);
+  const totalProducts = products.length;
+  
+  const today = new Date().toISOString().split('T')[0];
+  const todaysSales = sales.filter(s => s.date === today);
+  const todayRevenue = todaysSales.reduce((sum, s) => sum + s.total, 0);
+  
+  const totalOutstanding = customers.reduce((sum, c) => sum + (c.balance || 0), 0);
+  
+  // Latest 5 activities
+  const recentActivities = activities.slice(0, 5);
 
   return (
-    <div className="dashboard-page">
+    <div className="module-page">
       <div className="page-header">
         <div>
-          <h1>Dashboard</h1>
-          <p className="page-subtitle">Here's what's happening with your business today.</p>
+          <h1>Welcome back, {userProfile?.displayName || 'User'}!</h1>
+          <p className="page-subtitle">Here's what's happening in your business today.</p>
         </div>
-        <div className="period-toggle">
-          {['day', 'week', 'month', 'year'].map((p) => (
-            <button
-              key={p}
-              className={`period-btn ${period === p ? 'active' : ''}`}
-              onClick={() => setPeriod(p)}
-            >
-              {p.charAt(0).toUpperCase() + p.slice(1)}
-            </button>
-          ))}
+        <div style={{ display: 'flex', gap: '12px' }}>
+          <Link to="/sales" className="btn btn-primary"><PlusIcon /> Record Sale</Link>
+          <Link to="/purchases" className="btn btn-secondary"><PlusIcon /> Record Purchase</Link>
         </div>
       </div>
 
-      {/* Summary Stats */}
-      <section className="stats-grid">
-        <StatCard title="Total Revenue" value="$124,500" change="+12.5%" isPositive icon={DollarSign} />
-        <StatCard title="Inventory Value" value="$45,200" change="+3.2%" isPositive icon={Package} />
-        <StatCard title="Active Customers" value="1,204" change="+8.1%" isPositive icon={Users} />
-        <StatCard title="Net Profit" value="$32,800" change="+15.3%" isPositive icon={TrendingUp} />
-        <StatCard title="Today's Sales" value="$3,420" change="+5.7%" isPositive icon={ShoppingCart} />
-        <StatCard title="Pending Payments" value="$12,400" change="-2.4%" isPositive={false} icon={AlertTriangle} />
-      </section>
-
-      {/* Quick Actions */}
-      <section className="dashboard-section">
-        <h3 className="section-title">Quick Actions</h3>
-        <div className="quick-actions-grid">
-          <QuickAction label="Record Sale" icon={ShoppingCart} />
-          <QuickAction label="Add Product" icon={Package} />
-          <QuickAction label="Add Expense" icon={DollarSign} />
-          <QuickAction label="View Reports" icon={TrendingUp} />
-        </div>
-      </section>
-
-      {/* Charts placeholder area */}
-      <div className="dashboard-charts-row">
-        <div className="glass-card-light chart-card">
-          <h3 className="section-title">Revenue vs Expenses</h3>
-          <div className="chart-placeholder">
-            <div className="chart-bar-group">
-              {[65, 45, 80, 55, 72, 90, 60, 85, 70, 50, 75, 95].map((h, i) => (
-                <div key={i} className="chart-bar-wrapper">
-                  <div className="chart-bar revenue" style={{ height: `${h}%` }} />
-                  <div className="chart-bar expense" style={{ height: `${h * 0.6}%` }} />
-                </div>
-              ))}
-            </div>
-            <div className="chart-legend">
-              <span className="legend-item"><span className="legend-dot revenue" />Revenue</span>
-              <span className="legend-item"><span className="legend-dot expense" />Expenses</span>
-            </div>
+      <div className="dashboard-grid">
+        {/* Stat Cards */}
+        <div className="glass-card-light stat-card">
+          <div className="stat-icon"><DollarSign size={24} /></div>
+          <div className="stat-content">
+            <p className="stat-label">Today's Revenue</p>
+            <h3 className="stat-value">${todayRevenue.toFixed(2)}</h3>
           </div>
         </div>
 
-        <div className="glass-card-light chart-card">
-          <h3 className="section-title">Monthly Profit Trend</h3>
-          <div className="chart-placeholder">
-            <div className="chart-bar-group">
-              {[40, 55, 35, 70, 60, 85, 45, 90, 65, 75, 80, 95].map((h, i) => (
-                <div key={i} className="chart-bar-wrapper">
-                  <div className="chart-bar profit" style={{ height: `${h}%` }} />
+        <div className="glass-card-light stat-card">
+          <div className="stat-icon" style={{ color: 'var(--color-primary-dark)' }}><Package size={24} /></div>
+          <div className="stat-content">
+            <p className="stat-label">Inventory Value</p>
+            <h3 className="stat-value">${inventoryValue.toFixed(2)}</h3>
+          </div>
+        </div>
+
+        <div className="glass-card-light stat-card">
+          <div className="stat-icon" style={{ color: 'var(--color-warning)' }}><Users size={24} /></div>
+          <div className="stat-content">
+            <p className="stat-label">Outstanding Debts</p>
+            <h3 className="stat-value">${totalOutstanding.toFixed(2)}</h3>
+          </div>
+        </div>
+
+        <div className="glass-card-light stat-card">
+          <div className="stat-icon" style={{ color: 'var(--color-success)' }}><TrendingUp size={24} /></div>
+          <div className="stat-content">
+            <p className="stat-label">Total Products</p>
+            <h3 className="stat-value">{totalProducts}</h3>
+          </div>
+        </div>
+
+        {/* Recent Activity Panel */}
+        <div className="glass-card-light" style={{ gridColumn: '1 / -1', padding: '24px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+            <h3 style={{ fontSize: '18px', display: 'flex', alignItems: 'center', gap: '8px' }}><Clock size={20} /> Live Activity Feed</h3>
+            <Link to="/activity-log" className="btn btn-secondary" style={{ padding: '6px 12px', fontSize: '13px' }}>View All</Link>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            {recentActivities.map((log) => {
+              const dateObj = log.timestamp?.toDate ? log.timestamp.toDate() : new Date();
+              return (
+                <div key={log.id} style={{ display: 'flex', alignItems: 'flex-start', gap: '16px', paddingBottom: '16px', borderBottom: '1px solid var(--color-border-subtle)' }}>
+                  <div className="avatar-circle" style={{ width: '32px', height: '32px', fontSize: '14px', flexShrink: 0 }}>{log.user.charAt(0)}</div>
+                  <div style={{ flex: 1 }}>
+                    <p style={{ margin: 0, fontSize: '14px' }}><strong>{log.user}</strong> {log.action.toLowerCase()}</p>
+                    <p style={{ margin: '4px 0 0 0', fontSize: '12px', color: 'var(--color-text-secondary)' }}>{dateObj.toLocaleString()}</p>
+                  </div>
                 </div>
-              ))}
-            </div>
+              );
+            })}
+            {recentActivities.length === 0 && <p style={{ color: 'var(--color-text-secondary)', fontSize: '14px' }}>No recent activity.</p>}
           </div>
         </div>
       </div>
-
-      {/* Recent Activity */}
-      <section className="dashboard-section">
-        <div className="glass-card-light" style={{ padding: '24px' }}>
-          <h3 className="section-title">Recent Activity</h3>
-          <div className="activity-list">
-            {[
-              { action: 'Sale recorded', detail: 'Invoice #INV-0042 — $1,250.00', time: '5 min ago', type: 'success' },
-              { action: 'Stock In', detail: '50x Widget Pro added to inventory', time: '22 min ago', type: 'info' },
-              { action: 'Payment received', detail: 'Customer: Acme Corp — $3,200.00', time: '1 hour ago', type: 'success' },
-              { action: 'Low stock alert', detail: 'Cable Kit — 3 units remaining', time: '2 hours ago', type: 'warning' },
-              { action: 'Expense recorded', detail: 'Transport — $450.00', time: '3 hours ago', type: 'danger' },
-            ].map((item, i) => (
-              <div key={i} className="activity-item">
-                <div className={`activity-dot ${item.type}`} />
-                <div className="activity-content">
-                  <span className="activity-action">{item.action}</span>
-                  <span className="activity-detail">{item.detail}</span>
-                </div>
-                <span className="activity-time">{item.time}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
     </div>
   );
 };
+
+const PlusIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>;
 
 export default Dashboard;

@@ -1,48 +1,83 @@
 import React, { useState } from 'react';
-import { Plus, Search, Phone, Mail, Eye, Edit } from 'lucide-react';
-
-const sampleSuppliers = [
-  { id: 'S001', name: 'TechCo', contact: 'James K.', phone: '+250 788 111 222', email: 'james@techco.com', products: 'Electronics', balance: 0 },
-  { id: 'S002', name: 'WireCorp', contact: 'Marie L.', phone: '+250 788 222 333', email: 'marie@wirecorp.com', products: 'Cables, Accessories', balance: 1200.00 },
-  { id: 'S003', name: 'ConnectPlus', contact: 'Peter N.', phone: '+250 788 333 444', email: 'peter@connectplus.com', products: 'Hubs, Adapters', balance: 4500.00 },
-  { id: 'S004', name: 'InputTech', contact: 'Sarah M.', phone: '+250 788 444 555', email: 'sarah@inputtech.com', products: 'Peripherals', balance: 0 },
-];
+import { Building2, Search, Plus, Mail, Phone, MapPin } from 'lucide-react';
+import { useCollection, useFirestore } from '../hooks/useFirestore';
 
 const Suppliers = () => {
   const [searchTerm, setSearchTerm] = useState('');
-  const filtered = sampleSuppliers.filter(s =>
-    s.name.toLowerCase().includes(searchTerm.toLowerCase()) || s.contact.toLowerCase().includes(searchTerm.toLowerCase())
+  const [showForm, setShowForm] = useState(false);
+  const [formData, setFormData] = useState({ name: '', contact: '', phone: '', email: '', categories: '' });
+
+  const { data: suppliers, loading } = useCollection('suppliers');
+  const { addDocument } = useFirestore('suppliers');
+
+  const filtered = suppliers.filter(s =>
+    s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (s.categories && s.categories.toLowerCase().includes(searchTerm.toLowerCase()))
   );
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    await addDocument({
+      ...formData,
+      balance: 0,
+      status: 'Active'
+    });
+    setShowForm(false);
+    setFormData({ name: '', contact: '', phone: '', email: '', categories: '' });
+  };
 
   return (
     <div className="module-page">
       <div className="page-header">
-        <div><h1>Suppliers</h1><p className="page-subtitle">Manage supplier relationships and payments</p></div>
-        <button className="btn btn-primary" id="add-supplier-btn"><Plus size={18} /> Add Supplier</button>
+        <div><h1>Suppliers</h1><p className="page-subtitle">Manage supplier profiles and accounts payable</p></div>
+        <button className="btn btn-primary" onClick={() => setShowForm(!showForm)}>
+          <Plus size={18} /> {showForm ? 'Cancel' : 'Add Supplier'}
+        </button>
       </div>
 
+      {showForm && (
+        <div className="glass-card-light" style={{ padding: '24px', marginBottom: '24px' }}>
+          <form onSubmit={handleSubmit} style={{ display: 'flex', flexWrap: 'wrap', gap: '16px' }}>
+            <div className="form-group"><label>Company Name</label><input required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} /></div>
+            <div className="form-group"><label>Contact Person</label><input required value={formData.contact} onChange={e => setFormData({...formData, contact: e.target.value})} /></div>
+            <div className="form-group"><label>Phone</label><input required value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} /></div>
+            <div className="form-group"><label>Email</label><input type="email" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} /></div>
+            <div className="form-group"><label>Products Supplied</label><input value={formData.categories} onChange={e => setFormData({...formData, categories: e.target.value})} /></div>
+            <div style={{ width: '100%', marginTop: '8px' }}><button type="submit" className="btn btn-primary">Save Supplier</button></div>
+          </form>
+        </div>
+      )}
+
       <div className="module-toolbar">
-        <div className="toolbar-search"><Search size={18} /><input type="text" placeholder="Search suppliers…" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} id="suppliers-search" /></div>
+        <div className="toolbar-search"><Search size={18} /><input type="text" placeholder="Search suppliers…" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} /></div>
       </div>
 
       <div className="glass-card-light table-container">
-        <table className="data-table" id="suppliers-table">
-          <thead><tr><th>ID</th><th>Company</th><th>Contact</th><th>Phone</th><th>Email</th><th>Products</th><th>Balance Due</th><th>Actions</th></tr></thead>
-          <tbody>
-            {filtered.map(s => (
-              <tr key={s.id}>
-                <td className="cell-bold">{s.id}</td>
-                <td>{s.name}</td>
-                <td>{s.contact}</td>
-                <td><Phone size={14} style={{ marginRight: '4px', opacity: 0.6 }} />{s.phone}</td>
-                <td><Mail size={14} style={{ marginRight: '4px', opacity: 0.6 }} />{s.email}</td>
-                <td>{s.products}</td>
-                <td className="numeric">{s.balance > 0 ? <span style={{ color: 'var(--color-warning)' }}>${s.balance.toFixed(2)}</span> : <span style={{ color: 'var(--color-success)' }}>$0.00</span>}</td>
-                <td className="cell-actions"><button className="icon-btn" aria-label="View"><Eye size={16} /></button><button className="icon-btn" aria-label="Edit"><Edit size={16} /></button></td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        {loading ? (
+          <div style={{ padding: '40px', textAlign: 'center' }}><div className="loading-spinner-small" style={{ margin: '0 auto' }}></div></div>
+        ) : (
+          <table className="data-table">
+            <thead><tr><th>Supplier</th><th>Contact Details</th><th>Products/Categories</th><th>Outstanding Balance</th><th>Status</th></tr></thead>
+            <tbody>
+              {filtered.map(s => (
+                <tr key={s.id}>
+                  <td className="cell-bold"><div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><div className="avatar-circle" style={{ background: 'var(--color-primary-dark)', color: 'var(--color-accent-lime)' }}><Building2 size={16}/></div> {s.name}</div></td>
+                  <td>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      <span style={{ fontSize: '14px', fontWeight: 500 }}>{s.contact}</span>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px', color: 'var(--color-text-secondary)' }}><Phone size={12}/> {s.phone}</span>
+                      {s.email && <span style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px', color: 'var(--color-text-secondary)' }}><Mail size={12}/> {s.email}</span>}
+                    </div>
+                  </td>
+                  <td><span className="badge badge-info">{s.categories}</span></td>
+                  <td className="numeric" style={{ color: s.balance > 0 ? 'var(--color-danger)' : 'inherit' }}>${s.balance?.toFixed(2) || '0.00'}</td>
+                  <td><span className={`badge ${s.status === 'Active' ? 'badge-success' : 'badge-warning'}`}>{s.status}</span></td>
+                </tr>
+              ))}
+              {filtered.length === 0 && <tr><td colSpan="5" style={{ textAlign: 'center' }}>No suppliers found.</td></tr>}
+            </tbody>
+          </table>
+        )}
       </div>
     </div>
   );

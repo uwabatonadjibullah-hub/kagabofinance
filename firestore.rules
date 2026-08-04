@@ -1,0 +1,100 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+  
+    // Helper functions for role-based access
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    function getUserRole() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+    }
+    function isOwner() {
+      return isSignedIn() && getUserRole() == 'owner';
+    }
+    function isManager() {
+      return isSignedIn() && (getUserRole() == 'manager' || getUserRole() == 'owner');
+    }
+    function isAccountant() {
+      return isSignedIn() && (getUserRole() == 'accountant' || getUserRole() == 'manager' || getUserRole() == 'owner');
+    }
+    
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+    
+    // Users collection: User can read own, Owners can read/write all
+    match /users/{userId} {
+      allow read: if isOwner() || request.auth.uid == userId;
+      allow write: if isOwner() || (request.auth.uid == userId && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'status']));
+    }
+    
+    // Owner only collections
+    match /settings/{document=**} {
+      allow read, write: if isOwner();
+    }
+    match /activityLogs/{document=**} {
+      allow read: if isOwner();
+      allow write: if isSignedIn(); // All roles can log activity, but only owners can read the full log
+    }
+    
+    // Manager collections (Inventory, Purchases, Logistics, Suppliers)
+    match /products/{document=**} {
+      allow read: if isAccountant(); // Accountants need to read products to sell them
+      allow write: if isManager();
+    }
+    match /categories/{document=**} {
+      allow read: if isAccountant();
+      allow write: if isManager();
+    }
+    match /suppliers/{document=**} {
+      allow read: if isAccountant(); // Accountants might need to read suppliers for payments
+      allow write: if isManager();
+    }
+    match /purchases/{document=**} {
+      allow read, write: if isManager();
+    }
+    match /purchaseItems/{document=**} {
+      allow read, write: if isManager();
+    }
+    match /deliveries/{document=**} {
+      allow read, write: if isManager();
+    }
+    match /stockMovements/{document=**} {
+      allow read: if isManager();
+      allow write: if isAccountant(); // Accountants can write stock movements through sales
+    }
+    
+    // Accountant collections (Sales, Finance, Customers)
+    match /customers/{document=**} {
+      allow read, write: if isAccountant();
+    }
+    match /sales/{document=**} {
+      allow read, write: if isAccountant();
+    }
+    match /saleItems/{document=**} {
+      allow read, write: if isAccountant();
+    }
+    match /expenses/{document=**} {
+      allow read, write: if isAccountant();
+    }
+    match /income/{document=**} {
+      allow read, write: if isAccountant();
+    }
+    match /payments/{document=**} {
+      allow read, write: if isAccountant();
+    }
+    match /invoices/{document=**} {
+      allow read, write: if isAccountant();
+    }
+    match /reports/{document=**} {
+      allow read: if isManager();
+      allow write: if isManager();
+    }
+    match /notifications/{document=**} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn();
+    }
+  }
+}

@@ -1,98 +1,118 @@
 import React, { useState } from 'react';
-import { Plus, DollarSign, TrendingUp, TrendingDown, ArrowUpRight, ArrowDownRight } from 'lucide-react';
-
-const sampleExpenses = [
-  { id: 1, category: 'Transport', description: 'Delivery truck fuel', amount: 450.00, date: '2026-08-03' },
-  { id: 2, category: 'Salary', description: 'Staff payroll — July', amount: 8500.00, date: '2026-08-01' },
-  { id: 3, category: 'Rent', description: 'Warehouse rent — August', amount: 2200.00, date: '2026-08-01' },
-  { id: 4, category: 'Internet', description: 'Monthly ISP bill', amount: 120.00, date: '2026-07-28' },
-  { id: 5, category: 'Marketing', description: 'Social media ads', amount: 350.00, date: '2026-07-25' },
-];
-
-const sampleIncome = [
-  { id: 1, category: 'Sales', description: 'Product sales — Week 31', amount: 12400.00, date: '2026-08-03' },
-  { id: 2, category: 'Service Income', description: 'Consulting fee', amount: 1500.00, date: '2026-08-01' },
-  { id: 3, category: 'Other Income', description: 'Equipment rental', amount: 800.00, date: '2026-07-30' },
-];
+import { DollarSign, ArrowUpRight, ArrowDownRight, Search, Plus } from 'lucide-react';
+import { useCollection, useFirestore } from '../hooks/useFirestore';
 
 const Finance = () => {
-  const [tab, setTab] = useState('overview');
+  const [activeTab, setActiveTab] = useState('income');
+  const [searchTerm, setSearchTerm] = useState('');
+  
+  const { data: incomeData, loading: incomeLoading } = useCollection('income');
+  const { data: expenseData, loading: expenseLoading } = useCollection('expenses');
+  
+  const { addDocument: addIncome } = useFirestore('income');
+  const { addDocument: addExpense } = useFirestore('expenses');
 
-  const totalIncome = sampleIncome.reduce((s, i) => s + i.amount, 0);
-  const totalExpenses = sampleExpenses.reduce((s, e) => s + e.amount, 0);
+  const [showForm, setShowForm] = useState(false);
+  const [formData, setFormData] = useState({ description: '', amount: '', category: '' });
+
+  const totalIncome = incomeData.reduce((sum, item) => sum + item.amount, 0);
+  const totalExpenses = expenseData.reduce((sum, item) => sum + item.amount, 0);
   const netProfit = totalIncome - totalExpenses;
-  const profitMargin = ((netProfit / totalIncome) * 100).toFixed(1);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const amount = parseFloat(formData.amount);
+    if (activeTab === 'income') {
+      await addIncome({
+        category: formData.category || 'Sales',
+        description: formData.description,
+        amount,
+        date: new Date().toISOString().split('T')[0]
+      });
+    } else {
+      await addExpense({
+        category: formData.category || 'Maintenance',
+        description: formData.description,
+        amount,
+        date: new Date().toISOString().split('T')[0]
+      });
+    }
+    setShowForm(false);
+    setFormData({ description: '', amount: '', category: '' });
+  };
+
+  const filteredIncome = incomeData.filter(i => i.description.toLowerCase().includes(searchTerm.toLowerCase()));
+  const filteredExpenses = expenseData.filter(e => e.description.toLowerCase().includes(searchTerm.toLowerCase()));
 
   return (
     <div className="module-page">
       <div className="page-header">
-        <div><h1>Finance</h1><p className="page-subtitle">Monitor income, expenses, and profitability</p></div>
-        <div style={{ display: 'flex', gap: '12px' }}>
-          <button className="btn btn-secondary" id="add-income-btn"><Plus size={18} /> Add Income</button>
-          <button className="btn btn-primary" id="add-expense-btn"><Plus size={18} /> Add Expense</button>
+        <div><h1>Finance</h1><p className="page-subtitle">Track income, expenses, and overall profit</p></div>
+        <button className="btn btn-primary" onClick={() => setShowForm(!showForm)}>
+          <Plus size={18} /> {showForm ? 'Cancel' : `Record ${activeTab === 'income' ? 'Income' : 'Expense'}`}
+        </button>
+      </div>
+
+      <div className="dashboard-grid" style={{ marginBottom: '32px' }}>
+        <div className="glass-card-light stat-card">
+          <div className="stat-icon" style={{ color: 'var(--color-success)', background: 'rgba(63, 191, 127, 0.1)' }}><ArrowUpRight size={24} /></div>
+          <div className="stat-content"><p className="stat-label">Total Income</p><h3 className="stat-value">${totalIncome.toFixed(2)}</h3></div>
+        </div>
+        <div className="glass-card-light stat-card">
+          <div className="stat-icon" style={{ color: 'var(--color-danger)', background: 'rgba(225, 91, 91, 0.1)' }}><ArrowDownRight size={24} /></div>
+          <div className="stat-content"><p className="stat-label">Total Expenses</p><h3 className="stat-value">${totalExpenses.toFixed(2)}</h3></div>
+        </div>
+        <div className="glass-card-light stat-card">
+          <div className="stat-icon" style={{ color: 'var(--color-accent-lime)', background: 'var(--color-primary-dark)' }}><DollarSign size={24} /></div>
+          <div className="stat-content"><p className="stat-label">Net Profit</p><h3 className="stat-value" style={{ color: netProfit >= 0 ? 'inherit' : 'var(--color-danger)'}}>${netProfit.toFixed(2)}</h3></div>
         </div>
       </div>
 
-      {/* Summary Cards */}
-      <div className="stats-grid" style={{ marginBottom: '32px' }}>
-        <div className="glass-card-light stat-card">
-          <div className="stat-card-top"><span className="stat-card-label">Gross Revenue</span><div className="stat-card-icon-badge"><TrendingUp size={20} /></div></div>
-          <div className="stat-card-value">${totalIncome.toLocaleString()}</div>
-          <div className="stat-card-change positive"><ArrowUpRight size={14} /><span className="stat-change-amount">+12.5%</span></div>
+      {showForm && (
+        <div className="glass-card-light" style={{ padding: '24px', marginBottom: '24px' }}>
+          <form onSubmit={handleSubmit} style={{ display: 'flex', flexWrap: 'wrap', gap: '16px' }}>
+            <div className="form-group"><label>Category</label><input required placeholder={activeTab === 'income' ? 'e.g., Service, Sales' : 'e.g., Rent, Salaries'} value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})} /></div>
+            <div className="form-group"><label>Description</label><input required value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} /></div>
+            <div className="form-group"><label>Amount</label><input type="number" step="0.01" required value={formData.amount} onChange={e => setFormData({...formData, amount: e.target.value})} /></div>
+            <div style={{ width: '100%', marginTop: '8px' }}><button type="submit" className="btn btn-primary">Save {activeTab === 'income' ? 'Income' : 'Expense'}</button></div>
+          </form>
         </div>
-        <div className="glass-card-light stat-card">
-          <div className="stat-card-top"><span className="stat-card-label">Total Expenses</span><div className="stat-card-icon-badge" style={{ backgroundColor: 'rgba(225,91,91,0.12)' }}><TrendingDown size={20} /></div></div>
-          <div className="stat-card-value">${totalExpenses.toLocaleString()}</div>
-          <div className="stat-card-change negative"><ArrowDownRight size={14} /><span className="stat-change-amount">-3.1%</span></div>
-        </div>
-        <div className="glass-card-light stat-card">
-          <div className="stat-card-top"><span className="stat-card-label">Net Profit</span><div className="stat-card-icon-badge"><DollarSign size={20} /></div></div>
-          <div className="stat-card-value" style={{ color: netProfit >= 0 ? 'var(--color-success)' : 'var(--color-danger)' }}>${netProfit.toLocaleString()}</div>
-          <div className="stat-card-change positive"><span className="stat-change-label">Margin: {profitMargin}%</span></div>
-        </div>
+      )}
+
+      <div className="finance-tabs">
+        <button className={`tab-btn ${activeTab === 'income' ? 'active' : ''}`} onClick={() => setActiveTab('income')}>Income</button>
+        <button className={`tab-btn ${activeTab === 'expenses' ? 'active' : ''}`} onClick={() => setActiveTab('expenses')}>Expenses</button>
       </div>
 
-      {/* Tabs */}
-      <div className="module-tabs">
-        {['overview', 'income', 'expenses'].map(t => (
-          <button key={t} className={`tab-btn ${tab === t ? 'active' : ''}`} onClick={() => setTab(t)}>
-            {t.charAt(0).toUpperCase() + t.slice(1)}
-          </button>
-        ))}
+      <div className="module-toolbar">
+        <div className="toolbar-search"><Search size={18} /><input type="text" placeholder={`Search ${activeTab}…`} value={searchTerm} onChange={e => setSearchTerm(e.target.value)} /></div>
       </div>
 
-      {tab === 'expenses' && (
-        <div className="glass-card-light table-container">
-          <table className="data-table" id="expenses-table">
-            <thead><tr><th>Category</th><th>Description</th><th>Amount</th><th>Date</th></tr></thead>
+      <div className="glass-card-light table-container">
+        {activeTab === 'income' && incomeLoading || activeTab === 'expenses' && expenseLoading ? (
+          <div style={{ padding: '40px', textAlign: 'center' }}><div className="loading-spinner-small" style={{ margin: '0 auto' }}></div></div>
+        ) : (
+          <table className="data-table">
+            <thead><tr><th>ID</th><th>Category</th><th>Description</th><th>Amount</th><th>Date</th></tr></thead>
             <tbody>
-              {sampleExpenses.map(e => (
-                <tr key={e.id}><td><span className="badge badge-danger">{e.category}</span></td><td>{e.description}</td><td className="numeric">${e.amount.toFixed(2)}</td><td>{e.date}</td></tr>
+              {(activeTab === 'income' ? filteredIncome : filteredExpenses).map(item => (
+                <tr key={item.id}>
+                  <td className="cell-bold">{item.id.substring(0, 8).toUpperCase()}</td>
+                  <td>{item.category}</td>
+                  <td>{item.description}</td>
+                  <td className={`numeric ${activeTab === 'income' ? 'text-success' : 'text-danger'}`}>
+                    {activeTab === 'income' ? '+' : '-'}${item.amount.toFixed(2)}
+                  </td>
+                  <td>{item.date}</td>
+                </tr>
               ))}
+              {(activeTab === 'income' ? filteredIncome : filteredExpenses).length === 0 && (
+                <tr><td colSpan="5" style={{ textAlign: 'center' }}>No records found.</td></tr>
+              )}
             </tbody>
           </table>
-        </div>
-      )}
-
-      {tab === 'income' && (
-        <div className="glass-card-light table-container">
-          <table className="data-table" id="income-table">
-            <thead><tr><th>Category</th><th>Description</th><th>Amount</th><th>Date</th></tr></thead>
-            <tbody>
-              {sampleIncome.map(i => (
-                <tr key={i.id}><td><span className="badge badge-success">{i.category}</span></td><td>{i.description}</td><td className="numeric">${i.amount.toFixed(2)}</td><td>{i.date}</td></tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      {tab === 'overview' && (
-        <div className="glass-card-light" style={{ padding: '32px', textAlign: 'center' }}>
-          <h3 style={{ marginBottom: '16px' }}>Financial Overview</h3>
-          <p className="page-subtitle">Revenue, expense, and profit data will be visualized here with interactive charts from your Firestore data.</p>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 };
