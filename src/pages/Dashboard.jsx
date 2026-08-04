@@ -27,7 +27,15 @@ const Dashboard = () => {
   const todaysSales = sales.filter(s => s.date === today);
   const todayRevenue = todaysSales.reduce((sum, s) => sum + s.total, 0);
   
-  const totalOutstanding = customers.reduce((sum, c) => sum + (c.balance || 0), 0);
+  const salesOutstanding = sales.reduce((sum, s) => {
+    const bal = s.balance ?? (s.status === 'Paid' ? 0 : ((s.total || 0) - (s.paid || 0)));
+    return sum + Math.max(0, bal);
+  }, 0);
+  const purchaseOutstanding = purchases.reduce((sum, p) => {
+    const bal = p.balance ?? (p.status === 'Paid' ? 0 : ((p.total || 0) - (p.paid || 0)));
+    return sum + Math.max(0, bal);
+  }, 0);
+  const totalOutstanding = salesOutstanding + purchaseOutstanding;
   
   // Prepare data for charts (Last 7 days of sales & purchases)
   const last7Days = Array.from({length: 7}, (_, i) => {

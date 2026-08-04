@@ -17,7 +17,7 @@ const Purchases = () => {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [formData, setFormData] = useState({ 
-    productId: '', quantity: '', total: '', status: 'Pending' 
+    productId: '', quantity: '', total: '', paid: '', status: 'Pending' 
   });
 
   const selectedProduct = products.find(p => p.id === formData.productId);
@@ -37,7 +37,7 @@ const Purchases = () => {
   };
 
   const resetForm = () => {
-    setFormData({ productId: '', quantity: '', total: '', status: 'Pending' });
+    setFormData({ productId: '', quantity: '', total: '', paid: '', status: 'Pending' });
     setEditingId(null);
     setShowForm(false);
   };
@@ -48,6 +48,7 @@ const Purchases = () => {
       productId: purchase.productId || '',
       quantity: (purchase.quantity || '').toString(),
       total: (purchase.total || '').toString(),
+      paid: (purchase.paid ?? (purchase.status === 'Paid' ? purchase.total : 0)).toString(),
       status: purchase.status || 'Pending',
     });
     setShowForm(true);
@@ -60,6 +61,13 @@ const Purchases = () => {
     const quantity = parseInt(formData.quantity, 10);
     const ipq = selectedProduct.ipq || 1;
     const totalItems = quantity * ipq;
+    const total = parseFloat(formData.total || 0);
+    const paid = parseFloat(formData.paid || 0);
+    const balance = Math.max(0, total - paid);
+    
+    let status = 'Pending';
+    if (paid >= total && total > 0) status = 'Paid';
+    else if (paid > 0) status = 'Partially Paid';
 
     const docData = {
       productId: formData.productId,
@@ -68,8 +76,10 @@ const Purchases = () => {
       quantity,
       ipq,
       totalItems,
-      total: parseFloat(formData.total),
-      status: formData.status,
+      total,
+      paid,
+      balance,
+      status,
       date: new Date().toISOString().split('T')[0]
     };
 
@@ -142,22 +152,23 @@ const Purchases = () => {
             </div>
             <div className="form-group" style={{ flex: '1 1 120px' }}>
               <label>Total Cost</label>
-              <input type="number" step="0.01" required value={formData.total} onChange={e => setFormData({...formData, total: e.target.value})} />
+              <input type="number" step="0.01" required value={formData.total} onChange={e => setFormData({...formData, total: e.target.value})} placeholder="0.00" />
             </div>
-            <div className="form-group" style={{ flex: '1 1 140px' }}>
-              <label>Payment Status</label>
-              <select required value={formData.status} onChange={e => setFormData({...formData, status: e.target.value})}>
-                <option value="Paid">Paid</option>
-                <option value="Partially Paid">Partially Paid</option>
-                <option value="Pending">Pending</option>
-              </select>
+            <div className="form-group" style={{ flex: '1 1 120px' }}>
+              <label>Amount Paid</label>
+              <input type="number" step="0.01" required value={formData.paid} onChange={e => setFormData({...formData, paid: e.target.value})} placeholder="0.00" />
             </div>
 
             {selectedProduct && formData.quantity && (
-              <div style={{ width: '100%', padding: '12px 16px', background: 'rgba(63, 191, 127, 0.1)', borderRadius: '10px', fontSize: '14px', display: 'flex', gap: '16px', alignItems: 'center' }}>
+              <div style={{ width: '100%', padding: '12px 16px', background: 'rgba(63, 191, 127, 0.1)', borderRadius: '10px', fontSize: '14px', display: 'flex', gap: '16px', alignItems: 'center', flexWrap: 'wrap' }}>
                 <ArrowUpCircle size={16} color="var(--color-success)" />
                 <span><strong>Stock to add:</strong> {formData.quantity} qty × {selectedProduct.ipq || 1} IPQ = <strong>{calculatedTotalItems} items</strong></span>
                 <span style={{ color: 'var(--color-text-secondary)' }}>→ Supplier: {selectedProduct.supplier}</span>
+                {formData.total && (
+                  <span style={{ marginLeft: 'auto', fontWeight: 600 }}>
+                    Paid: RWF {parseFloat(formData.paid || 0).toFixed(2)} | Balance Due: <span style={{ color: 'var(--color-danger)' }}>RWF {Math.max(0, parseFloat(formData.total || 0) - parseFloat(formData.paid || 0)).toFixed(2)}</span>
+                  </span>
+                )}
               </div>
             )}
             
@@ -180,9 +191,12 @@ const Purchases = () => {
           <div style={{ padding: '40px', textAlign: 'center' }}><div className="loading-spinner-small" style={{ margin: '0 auto' }}></div></div>
         ) : (
           <table className="data-table">
-            <thead><tr><th>PO #</th><th>Product</th><th>Supplier</th><th>Qty</th><th>IPQ</th><th>Total Items</th><th>Total Cost</th><th>Status</th><th>Date</th>{canEdit && <th>Actions</th>}</tr></thead>
+            <thead><tr><th>PO #</th><th>Product</th><th>Supplier</th><th>Qty</th><th>IPQ</th><th>Total Items</th><th>Total Cost</th><th>Paid</th><th>Balance</th><th>Status</th><th>Date</th>{canEdit && <th>Actions</th>}</tr></thead>
             <tbody>
-              {filtered.map(p => (
+              {filtered.map(p => {
+                const paid = p.paid ?? (p.status === 'Paid' ? p.total : 0);
+                const balance = p.balance ?? Math.max(0, (p.total || 0) - paid);
+                return (
                 <tr key={p.id}>
                   <td className="cell-bold">{p.id.substring(0, 8).toUpperCase()}</td>
                   <td><span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Package size={14} /> {p.productName || '—'}</span></td>
@@ -191,6 +205,8 @@ const Purchases = () => {
                   <td className="numeric">{p.ipq || '—'}</td>
                   <td className="numeric" style={{ fontWeight: 600 }}>{p.totalItems ?? '—'}</td>
                   <td className="numeric">RWF {(p.total || 0).toFixed(2)}</td>
+                  <td className="numeric">RWF {paid.toFixed(2)}</td>
+                  <td className="numeric" style={{ color: balance > 0 ? 'var(--color-danger)' : 'inherit', fontWeight: balance > 0 ? 600 : 400 }}>RWF {balance.toFixed(2)}</td>
                   <td>{statusBadge(p.status)}</td>
                   <td>{p.date}</td>
                   {canEdit && (
@@ -200,8 +216,8 @@ const Purchases = () => {
                     </td>
                   )}
                 </tr>
-              ))}
-              {filtered.length === 0 && <tr><td colSpan={canEdit ? '10' : '9'} style={{ textAlign: 'center' }}>No purchases found.</td></tr>}
+              );})}
+              {filtered.length === 0 && <tr><td colSpan={canEdit ? '12' : '11'} style={{ textAlign: 'center' }}>No purchases found.</td></tr>}
             </tbody>
           </table>
         )}

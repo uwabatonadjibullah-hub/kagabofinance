@@ -192,6 +192,73 @@ const Analytics = () => {
               })()}
             </div>
           </div>
+
+          {/* Outstanding Debts Breakdown */}
+          {(() => {
+            const debtDetails = {};
+            sales.forEach(s => {
+              const bal = s.balance ?? (s.status === 'Paid' ? 0 : ((s.total || 0) - (s.paid || 0)));
+              if (bal > 0) {
+                const name = s.customer || 'Unknown Customer';
+                if (!debtDetails[name]) debtDetails[name] = { amount: 0, type: 'Customer (Receivable)' };
+                debtDetails[name].amount += bal;
+              }
+            });
+
+            purchases.forEach(p => {
+              const bal = p.balance ?? (p.status === 'Paid' ? 0 : ((p.total || 0) - (p.paid || 0)));
+              if (bal > 0) {
+                const name = p.supplier || 'Unknown Supplier';
+                if (!debtDetails[name]) debtDetails[name] = { amount: 0, type: 'Supplier (Payable)' };
+                debtDetails[name].amount += bal;
+              }
+            });
+
+            const overallDebt = Object.values(debtDetails).reduce((sum, d) => sum + d.amount, 0);
+            const sortedDebts = Object.entries(debtDetails).sort((a, b) => b[1].amount - a[1].amount);
+
+            return (
+              <div className="glass-card-light" style={{ padding: '24px', marginTop: '24px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
+                  <div>
+                    <h3 style={{ fontSize: '16px', margin: 0 }}>Outstanding Debts & Payables Breakdown</h3>
+                    <p style={{ fontSize: '13px', color: 'var(--color-text-secondary)', margin: '4px 0 0 0' }}>
+                      Unpaid balances across customers and suppliers
+                    </p>
+                  </div>
+                  <div style={{ padding: '10px 18px', background: 'rgba(225, 91, 91, 0.1)', borderRadius: '12px', color: 'var(--color-danger)' }}>
+                    <span style={{ fontSize: '12px', fontWeight: 500, display: 'block' }}>Overall Debt</span>
+                    <span style={{ fontSize: '20px', fontWeight: 700 }}>RWF {overallDebt.toFixed(2)}</span>
+                  </div>
+                </div>
+
+                {sortedDebts.length === 0 ? (
+                  <p style={{ color: 'var(--color-success)', fontSize: '14px', margin: '16px 0 0 0', fontWeight: 500 }}>
+                    ✓ No outstanding debts! All sales and purchases are fully paid.
+                  </p>
+                ) : (
+                  <div style={{ marginTop: '20px' }}>
+                    <p style={{ fontSize: '13px', fontWeight: 600, marginBottom: '12px', color: 'var(--color-text-primary)' }}>
+                      Details:
+                    </p>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '12px' }}>
+                      {sortedDebts.map(([name, data]) => (
+                        <div key={name} style={{ padding: '14px 16px', background: 'var(--color-background-alt)', borderRadius: '10px', border: '1px solid var(--color-border-subtle)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <div>
+                            <span style={{ fontWeight: 600, fontSize: '14px', display: 'block', color: 'var(--color-text-primary)' }}>{name}</span>
+                            <span style={{ fontSize: '11px', color: 'var(--color-text-secondary)' }}>{data.type}</span>
+                          </div>
+                          <span style={{ fontWeight: 700, fontSize: '14px', color: 'var(--color-danger)' }}>
+                            RWF {data.amount.toFixed(2)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
         </>
       )}
     </div>
