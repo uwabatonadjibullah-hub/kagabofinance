@@ -1,21 +1,25 @@
 import React, { useState } from 'react';
-import { Plus, Search, Eye, Package, ArrowUpCircle } from 'lucide-react';
+import { Plus, Search, Package, ArrowUpCircle, Edit, Trash2, Check, X } from 'lucide-react';
 import { useCollection, useFirestore } from '../hooks/useFirestore';
+import { useAuth } from '../contexts/AuthContext';
 import { doc, updateDoc, increment } from 'firebase/firestore';
 import { db } from '../firebase';
 
 const Purchases = () => {
+  const { userProfile } = useAuth();
+  const canEdit = userProfile?.role === 'owner' || userProfile?.role === 'manager';
+
   const [searchTerm, setSearchTerm] = useState('');
   const { data: purchases, loading } = useCollection('purchases');
   const { data: products } = useCollection('products');
-  const { addDocument } = useFirestore('purchases');
+  const { addDocument, updateDocument, deleteDocument } = useFirestore('purchases');
   
   const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState(null);
   const [formData, setFormData] = useState({ 
     productId: '', quantity: '', total: '', status: 'Pending' 
   });
 
-  // Get selected product details
   const selectedProduct = products.find(p => p.id === formData.productId);
   const calculatedTotalItems = selectedProduct 
     ? parseInt(formData.quantity || 0) * (selectedProduct.ipq || 1) 
@@ -32,6 +36,23 @@ const Purchases = () => {
     return <span className={`badge ${map[status] || 'badge-info'}`}>{status}</span>;
   };
 
+  const resetForm = () => {
+    setFormData({ productId: '', quantity: '', total: '', status: 'Pending' });
+    setEditingId(null);
+    setShowForm(false);
+  };
+
+  const handleEdit = (purchase) => {
+    setEditingId(purchase.id);
+    setFormData({
+      productId: purchase.productId || '',
+      quantity: (purchase.quantity || '').toString(),
+      total: (purchase.total || '').toString(),
+      status: purchase.status || 'Pending',
+    });
+    setShowForm(true);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!selectedProduct) return;
@@ -40,8 +61,7 @@ const Purchases = () => {
     const ipq = selectedProduct.ipq || 1;
     const totalItems = quantity * ipq;
 
-    // 1. Save the purchase record
-    await addDocument({
+    const docData = {
       productId: formData.productId,
       productName: selectedProduct.name,
       supplier: selectedProduct.supplier,
@@ -51,31 +71,61 @@ const Purchases = () => {
       total: parseFloat(formData.total),
       status: formData.status,
       date: new Date().toISOString().split('T')[0]
-    });
+    };
 
-    // 2. Update the product's inventory (add stock)
+    if (editingId) {
+      // Find original purchase to reverse stock
+      const original = purchases.find(p => p.id === editingId);
+      if (original && original.productId) {
+        const origRef = doc(db, 'products', original.productId);
+        await updateDoc(origRef, {
+          qty: increment(-(original.quantity || 0)),
+          totalItems: increment(-(original.totalItems || 0))
+        });
+      }
+      await updateDocument(editingId, docData);
+    } else {
+      await addDocument(docData);
+    }
+
+    // Add new stock
     const productRef = doc(db, 'products', formData.productId);
     await updateDoc(productRef, {
       qty: increment(quantity),
       totalItems: increment(totalItems)
     });
     
-    setShowForm(false);
-    setFormData({ productId: '', quantity: '', total: '', status: 'Pending' });
+    resetForm();
+  };
+
+  const handleDelete = async (purchase) => {
+    if (!window.confirm("Delete this purchase? Stock will be reversed from inventory.")) return;
+    
+    // Reverse stock addition
+    if (purchase.productId) {
+      const productRef = doc(db, 'products', purchase.productId);
+      await updateDoc(productRef, {
+        qty: increment(-(purchase.quantity || 0)),
+        totalItems: increment(-(purchase.totalItems || 0))
+      });
+    }
+    await deleteDocument(purchase.id);
   };
 
   return (
     <div className="module-page">
       <div className="page-header">
         <div><h1>Purchases</h1><p className="page-subtitle">Record purchases from suppliers — stock is automatically added to inventory</p></div>
-        <button className="btn btn-primary" onClick={() => setShowForm(!showForm)}>
-          <Plus size={18} /> {showForm ? 'Cancel' : 'Record Purchase'}
-        </button>
+        {canEdit && (
+          <button className="btn btn-primary" onClick={() => { if (showForm) resetForm(); else setShowForm(true); }}>
+            <Plus size={18} /> {showForm ? 'Cancel' : 'Record Purchase'}
+          </button>
+        )}
       </div>
 
-      {showForm && (
+      {showForm && canEdit && (
         <div className="glass-card-light" style={{ padding: '24px', marginBottom: '24px' }}>
-          <h3 style={{ marginBottom: '16px' }}>New Purchase</h3>
+          <h3 style={{ marginBottom: '16px' }}>{editingId ? 'Edit Purchase' : 'New Purchase'}</h3>
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexWrap: 'wrap', gap: '16px' }}>
             <div className="form-group" style={{ flex: '1 1 220px' }}>
               <label>Product</label>
@@ -111,7 +161,12 @@ const Purchases = () => {
               </div>
             )}
             
-            <div style={{ width: '100%', marginTop: '8px' }}><button type="submit" className="btn btn-primary">Save Purchase & Add Stock</button></div>
+            <div style={{ width: '100%', marginTop: '8px', display: 'flex', gap: '12px' }}>
+              <button type="submit" className="btn btn-primary">
+                {editingId ? <><Check size={16} /> Update Purchase</> : 'Save Purchase & Add Stock'}
+              </button>
+              {editingId && <button type="button" className="btn btn-secondary" onClick={resetForm}><X size={16} /> Cancel</button>}
+            </div>
           </form>
         </div>
       )}
@@ -125,7 +180,7 @@ const Purchases = () => {
           <div style={{ padding: '40px', textAlign: 'center' }}><div className="loading-spinner-small" style={{ margin: '0 auto' }}></div></div>
         ) : (
           <table className="data-table">
-            <thead><tr><th>PO #</th><th>Product</th><th>Supplier</th><th>Qty</th><th>IPQ</th><th>Total Items</th><th>Total Cost</th><th>Status</th><th>Date</th></tr></thead>
+            <thead><tr><th>PO #</th><th>Product</th><th>Supplier</th><th>Qty</th><th>IPQ</th><th>Total Items</th><th>Total Cost</th><th>Status</th><th>Date</th>{canEdit && <th>Actions</th>}</tr></thead>
             <tbody>
               {filtered.map(p => (
                 <tr key={p.id}>
@@ -138,9 +193,15 @@ const Purchases = () => {
                   <td className="numeric">${(p.total || 0).toFixed(2)}</td>
                   <td>{statusBadge(p.status)}</td>
                   <td>{p.date}</td>
+                  {canEdit && (
+                    <td className="cell-actions">
+                      <button className="icon-btn" onClick={() => handleEdit(p)} aria-label="Edit"><Edit size={16} /></button>
+                      <button className="icon-btn danger" onClick={() => handleDelete(p)} aria-label="Delete"><Trash2 size={16} /></button>
+                    </td>
+                  )}
                 </tr>
               ))}
-              {filtered.length === 0 && <tr><td colSpan="9" style={{ textAlign: 'center' }}>No purchases found.</td></tr>}
+              {filtered.length === 0 && <tr><td colSpan={canEdit ? '10' : '9'} style={{ textAlign: 'center' }}>No purchases found.</td></tr>}
             </tbody>
           </table>
         )}

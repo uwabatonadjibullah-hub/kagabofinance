@@ -16,6 +16,8 @@ import Reports from './pages/Reports';
 import Analytics from './pages/Analytics';
 import ActivityLog from './pages/ActivityLog';
 import SettingsPage from './pages/Settings';
+import PrivacyPolicy from './pages/PrivacyPolicy';
+import TermsConditions from './pages/TermsConditions';
 
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
@@ -66,6 +68,8 @@ function App() {
             <Route path="analytics" element={<Analytics />} />
             <Route path="activity-log" element={<ActivityLog />} />
             <Route path="settings" element={<SettingsPage />} />
+            <Route path="privacy-policy" element={<PrivacyPolicy />} />
+            <Route path="terms-conditions" element={<TermsConditions />} />
           </Route>
 
           {/* Catch all — redirect to login */}

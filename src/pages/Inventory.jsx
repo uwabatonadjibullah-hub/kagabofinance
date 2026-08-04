@@ -1,17 +1,22 @@
 import React, { useState } from 'react';
-import { Plus, Search, Package, Trash2, Box, Layers } from 'lucide-react';
+import { Plus, Search, Package, Trash2, Edit, Box, Layers, X, Check } from 'lucide-react';
 import { useCollection, useFirestore } from '../hooks/useFirestore';
+import { useAuth } from '../contexts/AuthContext';
 
 const Inventory = () => {
+  const { userProfile } = useAuth();
+  const canEdit = userProfile?.role === 'owner' || userProfile?.role === 'manager';
+
   const [searchTerm, setSearchTerm] = useState('');
   const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState(null);
   
   const [formData, setFormData] = useState({
     name: '', category: '', supplier: '', buyPrice: '', sellPriceQty: '', sellPriceItem: '', qty: '', ipq: '', minStock: ''
   });
 
   const { data: products, loading } = useCollection('products');
-  const { addDocument, deleteDocument } = useFirestore('products');
+  const { addDocument, updateDocument, deleteDocument } = useFirestore('products');
 
   const filtered = products.filter(p =>
     p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -30,11 +35,33 @@ const Inventory = () => {
     return <span className={`badge ${map[status] || ''}`}>{status}</span>;
   };
 
+  const resetForm = () => {
+    setFormData({ name: '', category: '', supplier: '', buyPrice: '', sellPriceQty: '', sellPriceItem: '', qty: '', ipq: '', minStock: '' });
+    setEditingId(null);
+    setShowForm(false);
+  };
+
+  const handleEdit = (product) => {
+    setEditingId(product.id);
+    setFormData({
+      name: product.name || '',
+      category: product.category || '',
+      supplier: product.supplier || '',
+      buyPrice: product.buyPrice?.toString() || '',
+      sellPriceQty: (product.sellPriceQty || product.sellPrice || '').toString(),
+      sellPriceItem: (product.sellPriceItem || '').toString(),
+      qty: product.qty?.toString() || '',
+      ipq: (product.ipq || '').toString(),
+      minStock: (product.minStock || '').toString(),
+    });
+    setShowForm(true);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     const qty = parseInt(formData.qty, 10);
     const ipq = parseInt(formData.ipq, 10);
-    await addDocument({
+    const docData = {
       name: formData.name,
       category: formData.category,
       supplier: formData.supplier,
@@ -45,9 +72,14 @@ const Inventory = () => {
       ipq,
       totalItems: qty * ipq,
       minStock: parseInt(formData.minStock, 10),
-    });
-    setShowForm(false);
-    setFormData({ name: '', category: '', supplier: '', buyPrice: '', sellPriceQty: '', sellPriceItem: '', qty: '', ipq: '', minStock: '' });
+    };
+
+    if (editingId) {
+      await updateDocument(editingId, docData);
+    } else {
+      await addDocument(docData);
+    }
+    resetForm();
   };
 
   const handleDelete = async (id) => {
@@ -60,14 +92,16 @@ const Inventory = () => {
     <div className="module-page">
       <div className="page-header">
         <div><h1>Inventory</h1><p className="page-subtitle">Manage your products and stock levels. Stock is updated through Purchases (adds) and Sales (subtracts).</p></div>
-        <button className="btn btn-primary" onClick={() => setShowForm(!showForm)}>
-          <Plus size={18} /> {showForm ? 'Cancel' : 'Add Product'}
-        </button>
+        {canEdit && (
+          <button className="btn btn-primary" onClick={() => { if (showForm) resetForm(); else setShowForm(true); }}>
+            <Plus size={18} /> {showForm ? 'Cancel' : 'Add Product'}
+          </button>
+        )}
       </div>
 
-      {showForm && (
+      {showForm && canEdit && (
         <div className="glass-card-light" style={{ padding: '24px', marginBottom: '24px' }}>
-          <h3 style={{ marginBottom: '16px' }}>New Product</h3>
+          <h3 style={{ marginBottom: '16px' }}>{editingId ? 'Edit Product' : 'New Product'}</h3>
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexWrap: 'wrap', gap: '16px' }}>
             <div className="form-group" style={{ flex: '1 1 200px' }}><label>Product Name</label><input required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} /></div>
             <div className="form-group" style={{ flex: '1 1 150px' }}><label>Category</label><input required value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})} /></div>
@@ -75,7 +109,7 @@ const Inventory = () => {
             <div className="form-group" style={{ flex: '1 1 120px' }}><label>Buy Price / Qty</label><input type="number" step="0.01" required value={formData.buyPrice} onChange={e => setFormData({...formData, buyPrice: e.target.value})} /></div>
             <div className="form-group" style={{ flex: '1 1 120px' }}><label>Sell Price / Qty</label><input type="number" step="0.01" required value={formData.sellPriceQty} onChange={e => setFormData({...formData, sellPriceQty: e.target.value})} /></div>
             <div className="form-group" style={{ flex: '1 1 120px' }}><label>Sell Price / Item</label><input type="number" step="0.01" required value={formData.sellPriceItem} onChange={e => setFormData({...formData, sellPriceItem: e.target.value})} /></div>
-            <div className="form-group" style={{ flex: '1 1 100px' }}><label>Initial Qty (boxes)</label><input type="number" required value={formData.qty} onChange={e => setFormData({...formData, qty: e.target.value})} /></div>
+            <div className="form-group" style={{ flex: '1 1 100px' }}><label>Qty (boxes)</label><input type="number" required value={formData.qty} onChange={e => setFormData({...formData, qty: e.target.value})} /></div>
             <div className="form-group" style={{ flex: '1 1 100px' }}><label>IPQ (Items/Qty)</label><input type="number" required min="1" value={formData.ipq} onChange={e => setFormData({...formData, ipq: e.target.value})} placeholder="e.g. 12" /></div>
             <div className="form-group" style={{ flex: '1 1 100px' }}><label>Min Stock Alert</label><input type="number" required value={formData.minStock} onChange={e => setFormData({...formData, minStock: e.target.value})} /></div>
             
@@ -87,7 +121,12 @@ const Inventory = () => {
               </div>
             )}
             
-            <div style={{ width: '100%', marginTop: '8px' }}><button type="submit" className="btn btn-primary">Save Product</button></div>
+            <div style={{ width: '100%', marginTop: '8px', display: 'flex', gap: '12px' }}>
+              <button type="submit" className="btn btn-primary">
+                {editingId ? <><Check size={16} /> Update Product</> : 'Save Product'}
+              </button>
+              {editingId && <button type="button" className="btn btn-secondary" onClick={resetForm}><X size={16} /> Cancel Edit</button>}
+            </div>
           </form>
         </div>
       )}
@@ -105,7 +144,7 @@ const Inventory = () => {
         ) : (
           <table className="data-table">
             <thead>
-              <tr><th>Product</th><th>Category</th><th>Supplier</th><th>Buy Price</th><th>Sell/Qty</th><th>Sell/Item</th><th>Qty (boxes)</th><th>IPQ</th><th>Total Items</th><th>Status</th><th>Actions</th></tr>
+              <tr><th>Product</th><th>Category</th><th>Supplier</th><th>Buy Price</th><th>Sell/Qty</th><th>Sell/Item</th><th>Qty (boxes)</th><th>IPQ</th><th>Total Items</th><th>Status</th>{canEdit && <th>Actions</th>}</tr>
             </thead>
             <tbody>
               {filtered.map(p => {
@@ -123,17 +162,20 @@ const Inventory = () => {
                   <td className="numeric">${(p.sellPriceItem || 0).toFixed(2)}</td>
                   <td className="numeric">
                     <span style={{ fontWeight: 600 }}>{displayQty}</span>
-                    {looseItems > 0 && <span style={{ color: 'var(--color-warning)', fontSize: '12px', marginLeft: '4px' }}>+{looseItems} items</span>}
+                    {looseItems > 0 && <span style={{ color: 'var(--color-warning)', fontSize: '12px', marginLeft: '4px' }}>+{looseItems}</span>}
                   </td>
                   <td className="numeric">{p.ipq || '—'}</td>
                   <td className="numeric" style={{ fontWeight: 600 }}>{totalItems}</td>
                   <td>{getStatusBadge(status)}</td>
-                  <td className="cell-actions">
-                    <button className="icon-btn danger" onClick={() => handleDelete(p.id)} aria-label="Delete"><Trash2 size={16} /></button>
-                  </td>
+                  {canEdit && (
+                    <td className="cell-actions">
+                      <button className="icon-btn" onClick={() => handleEdit(p)} aria-label="Edit"><Edit size={16} /></button>
+                      <button className="icon-btn danger" onClick={() => handleDelete(p.id)} aria-label="Delete"><Trash2 size={16} /></button>
+                    </td>
+                  )}
                 </tr>
               );})}
-              {filtered.length === 0 && <tr><td colSpan="11" style={{ textAlign: 'center' }}>No products found.</td></tr>}
+              {filtered.length === 0 && <tr><td colSpan={canEdit ? '12' : '11'} style={{ textAlign: 'center' }}>No products found.</td></tr>}
             </tbody>
           </table>
         )}

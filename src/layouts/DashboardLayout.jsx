@@ -1,6 +1,7 @@
 import React from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import NotificationDropdown from '../components/NotificationDropdown';
 import {
   LayoutDashboard,
   Package,
@@ -15,8 +16,9 @@ import {
   ClipboardList,
   Settings,
   LogOut,
-  Bell,
   Search,
+  Shield,
+  FileText,
 } from 'lucide-react';
 
 const navItems = [
@@ -81,6 +83,15 @@ const DashboardLayout = () => {
             <LogOut size={20} />
             <span>Sign Out</span>
           </button>
+
+          <div className="sidebar-legal">
+            <NavLink to="/privacy-policy" className="sidebar-legal-link">
+              <Shield size={14} /> Privacy Policy
+            </NavLink>
+            <NavLink to="/terms-conditions" className="sidebar-legal-link">
+              <FileText size={14} /> Terms & Conditions
+            </NavLink>
+          </div>
         </div>
       </aside>
 
@@ -98,10 +109,7 @@ const DashboardLayout = () => {
           </div>
 
           <div className="header-right">
-            <button className="header-notification-btn" id="notifications-btn" aria-label="Notifications">
-              <Bell size={20} />
-              <span className="notification-dot" />
-            </button>
+            <NotificationDropdown />
             <div className="header-user">
               <div className="header-avatar" id="user-avatar">{initials}</div>
               <div className="header-user-info">
