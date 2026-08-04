@@ -33,8 +33,8 @@ const HelpDropdown = () => {
         <div className="help-dropdown">
           <div className="help-dropdown-header">
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <HelpCircle size={18} color="var(--color-primary-dark)" />
-              <h4 style={{ margin: 0, fontSize: '15px', fontWeight: 600 }}>Need Help?</h4>
+              <HelpCircle size={18} color="white" />
+              <h4 style={{ margin: 0, fontSize: '15px', fontWeight: 600, color: 'white' }}>Need Help?</h4>
             </div>
             <button className="help-close-btn" onClick={() => setIsOpen(false)}>
               <X size={16} />
@@ -42,7 +42,7 @@ const HelpDropdown = () => {
           </div>
 
           <div className="help-dropdown-body">
-            <p style={{ fontSize: '13px', color: 'var(--color-text-secondary)', marginBottom: '16px', lineHeight: 1.4 }}>
+            <p style={{ fontSize: '13px', color: 'white', marginBottom: '16px', lineHeight: 1.4 }}>
               If you have any questions or require support with the system, please reach out to us:
             </p>
 
