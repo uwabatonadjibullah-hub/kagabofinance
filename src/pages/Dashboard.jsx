@@ -16,7 +16,11 @@ const Dashboard = () => {
   const { data: activities } = useCollection('activityLogs', 'timestamp', 'desc');
 
   // Calculations
-  const inventoryValue = products.reduce((sum, p) => sum + (p.buyPrice * p.qty), 0);
+  const inventoryValue = products.reduce((sum, p) => {
+    const totalItems = p.totalItems ?? (p.qty * (p.ipq || 1));
+    // Value = totalItems × (buyPrice / ipq) since buyPrice is per Quantity
+    return sum + (totalItems * (p.buyPrice / (p.ipq || 1)));
+  }, 0);
   const totalProducts = products.length;
   
   const today = new Date().toISOString().split('T')[0];
