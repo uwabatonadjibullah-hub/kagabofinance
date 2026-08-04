@@ -1,5 +1,5 @@
-import React from 'react';
-import { Outlet, NavLink, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import NotificationDropdown from '../components/NotificationDropdown';
 import HelpDropdown from '../components/HelpDropdown';
@@ -20,6 +20,7 @@ import {
   Search,
   Shield,
   FileText,
+  Menu,
 } from 'lucide-react';
 
 const navItems = [
@@ -40,6 +41,13 @@ const navItems = [
 const DashboardLayout = () => {
   const { user, userProfile, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  // Close mobile menu when route changes
+  useEffect(() => {
+    setIsMobileMenuOpen(false);
+  }, [location.pathname]);
 
   const handleLogout = async () => {
     try {
@@ -55,8 +63,13 @@ const DashboardLayout = () => {
 
   return (
     <div className="app-container">
+      {/* Mobile Overlay */}
+      {isMobileMenuOpen && (
+        <div className="mobile-overlay" onClick={() => setIsMobileMenuOpen(false)}></div>
+      )}
+
       {/* Sidebar */}
-      <aside className="sidebar" id="sidebar">
+      <aside className={`sidebar ${isMobileMenuOpen ? 'mobile-open' : ''}`} id="sidebar">
         <div className="sidebar-brand">
           <img src="/iconed_logo.jpg" alt="KAGABO Finance & Logistics" className="sidebar-logo" />
         </div>
@@ -99,14 +112,19 @@ const DashboardLayout = () => {
       {/* Main Content Area */}
       <main className="main-content">
         <header className="header" id="main-header">
-          <div className="header-search">
-            <Search size={18} className="search-icon" />
-            <input
-              type="text"
-              placeholder="Search products, customers, invoices…"
-              className="header-search-input"
-              id="global-search"
-            />
+          <div className="header-left" style={{ display: 'flex', alignItems: 'center', flex: 1 }}>
+            <button className="mobile-menu-btn" onClick={() => setIsMobileMenuOpen(true)}>
+              <Menu size={24} />
+            </button>
+            <div className="header-search">
+              <Search size={18} className="search-icon" />
+              <input
+                type="text"
+                placeholder="Search products, customers, invoices…"
+                className="header-search-input"
+                id="global-search"
+              />
+            </div>
           </div>
 
           <div className="header-right">
