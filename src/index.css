@@ -337,6 +337,7 @@ label {
 }
 .auth-form-header h2 {
   margin-bottom: 4px;
+  color: #0E2A2C;
 }
 .auth-form-header p {
   color: var(--color-text-secondary);

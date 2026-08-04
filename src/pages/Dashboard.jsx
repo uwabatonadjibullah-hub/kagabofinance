@@ -3,6 +3,7 @@ import { Package, DollarSign, TrendingUp, Users, ArrowUpRight, ArrowDownRight, C
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useCollection } from '../hooks/useFirestore';
+import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, BarChart, Bar, Legend } from 'recharts';
 
 const Dashboard = () => {
   const { userProfile } = useAuth();
@@ -23,6 +24,22 @@ const Dashboard = () => {
   const todayRevenue = todaysSales.reduce((sum, s) => sum + s.total, 0);
   
   const totalOutstanding = customers.reduce((sum, c) => sum + (c.balance || 0), 0);
+  
+  // Prepare data for charts (Last 7 days of sales & purchases)
+  const last7Days = Array.from({length: 7}, (_, i) => {
+    const d = new Date();
+    d.setDate(d.getDate() - (6 - i));
+    return d.toISOString().split('T')[0];
+  });
+
+  const chartData = last7Days.map(date => {
+    const daySales = sales.filter(s => s.date === date).reduce((sum, s) => sum + s.total, 0);
+    const dayPurchases = purchases.filter(p => p.date === date).reduce((sum, p) => sum + p.total, 0);
+    
+    // Format date for display (e.g. 'Aug 04')
+    const displayDate = new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    return { name: displayDate, sales: daySales, purchases: dayPurchases };
+  });
   
   // Latest 5 activities
   const recentActivities = activities.slice(0, 5);
@@ -72,6 +89,61 @@ const Dashboard = () => {
             <p className="stat-label">Total Products</p>
             <h3 className="stat-value">{totalProducts}</h3>
           </div>
+        </div>
+
+        {/* Charts Row */}
+        <div className="glass-card-light" style={{ gridColumn: '1 / -1', padding: '24px', display: 'flex', gap: '24px', flexWrap: 'wrap' }}>
+          
+          {/* Sales Curve */}
+          <div style={{ flex: '1 1 500px', minWidth: 0 }}>
+            <h3 style={{ fontSize: '16px', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <TrendingUp size={18} color="var(--color-success)" /> Revenue Curve (Last 7 Days)
+            </h3>
+            <div style={{ height: '300px', width: '100%' }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="colorSales" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="var(--color-success)" stopOpacity={0.3}/>
+                      <stop offset="95%" stopColor="var(--color-success)" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-border-subtle)" />
+                  <XAxis dataKey="name" tick={{fontSize: 12, fill: 'var(--color-text-secondary)'}} axisLine={false} tickLine={false} />
+                  <YAxis tick={{fontSize: 12, fill: 'var(--color-text-secondary)'}} axisLine={false} tickLine={false} tickFormatter={(value) => `$${value}`} />
+                  <Tooltip 
+                    contentStyle={{ backgroundColor: 'var(--color-surface-light)', borderRadius: '12px', border: '1px solid var(--color-border-subtle)', boxShadow: 'var(--shadow-md)' }}
+                    itemStyle={{ color: 'var(--color-text-primary)', fontWeight: 500 }}
+                  />
+                  <Area type="monotone" dataKey="sales" name="Revenue" stroke="var(--color-success)" strokeWidth={3} fillOpacity={1} fill="url(#colorSales)" />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* Sales vs Purchases Bar */}
+          <div style={{ flex: '1 1 500px', minWidth: 0 }}>
+            <h3 style={{ fontSize: '16px', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <DollarSign size={18} color="var(--color-info)" /> Cash Flow Comparison
+            </h3>
+            <div style={{ height: '300px', width: '100%' }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-border-subtle)" />
+                  <XAxis dataKey="name" tick={{fontSize: 12, fill: 'var(--color-text-secondary)'}} axisLine={false} tickLine={false} />
+                  <YAxis tick={{fontSize: 12, fill: 'var(--color-text-secondary)'}} axisLine={false} tickLine={false} tickFormatter={(value) => `$${value}`} />
+                  <Tooltip 
+                    cursor={{fill: 'rgba(0,0,0,0.02)'}}
+                    contentStyle={{ backgroundColor: 'var(--color-surface-light)', borderRadius: '12px', border: '1px solid var(--color-border-subtle)', boxShadow: 'var(--shadow-md)' }}
+                  />
+                  <Legend iconType="circle" wrapperStyle={{ fontSize: '13px', paddingTop: '10px' }} />
+                  <Bar dataKey="sales" name="Sales In" fill="var(--color-success)" radius={[4, 4, 0, 0]} barSize={16} />
+                  <Bar dataKey="purchases" name="Purchases Out" fill="var(--color-danger)" radius={[4, 4, 0, 0]} barSize={16} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+          
         </div>
 
         {/* Recent Activity Panel */}

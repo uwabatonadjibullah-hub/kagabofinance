@@ -55,7 +55,7 @@ const DashboardLayout = () => {
       {/* Sidebar */}
       <aside className="sidebar" id="sidebar">
         <div className="sidebar-brand">
-          <img src="/bw_sided_logo.jpg" alt="KAGABO Finance & Logistics" className="sidebar-logo" />
+          <img src="/iconed_logo.jpg" alt="KAGABO Finance & Logistics" className="sidebar-logo" />
         </div>
 
         <nav className="sidebar-nav">
