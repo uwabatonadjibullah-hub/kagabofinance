@@ -413,10 +413,10 @@ label {
   min-height: 100vh;
 }
 
-/* Sidebar */
+/* ── Sidebar (base) ───────────────────────────────────────────────────────── */
 .sidebar {
-  width: 260px;
-  min-width: 260px;
+  /* Width is set via inline style so drag-resize works.
+     The values here are fallbacks / mobile overrides. */
   background-color: var(--color-primary-dark);
   color: white;
   padding: 24px 16px;
@@ -426,12 +426,22 @@ label {
   top: 0;
   height: 100vh;
   overflow-y: auto;
+  overflow-x: hidden;          /* hide text that overflows while dragging */
+  position: relative;          /* anchor the resize handle */
+  flex-shrink: 0;
+  /* Smooth width changes only when NOT dragging (JS adds/removes a class) */
+  transition: width 0.22s ease, min-width 0.22s ease;
+}
+
+.sidebar.sidebar-dragging {
+  transition: none !important;
 }
 
 .sidebar-brand {
   padding: 0 8px 24px;
   border-bottom: 1px solid rgba(255,255,255,0.08);
   margin-bottom: 16px;
+  overflow: hidden;
 }
 .sidebar-logo {
   width: 100%;
@@ -439,6 +449,16 @@ label {
   height: auto;
   object-fit: contain;
   border-radius: 8px;
+  display: block;
+}
+/* Icon-only logo (small square) */
+.sidebar-logo-icon {
+  width: 36px;
+  height: 36px;
+  object-fit: cover;
+  border-radius: 8px;
+  display: block;
+  margin: 0 auto;
 }
 
 .sidebar-nav {
@@ -464,6 +484,8 @@ label {
   cursor: pointer;
   width: 100%;
   text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
 }
 .sidebar-link:hover {
   background-color: rgba(255, 255, 255, 0.08);
@@ -487,6 +509,91 @@ label {
   color: var(--color-danger) !important;
   background-color: rgba(225, 91, 91, 0.1) !important;
 }
+
+/* ── Collapse / expand toggle button ─────────────────────────────────────── */
+.sidebar-collapse-btn {
+  display: none; /* hidden on mobile */
+  align-items: center;
+  gap: 12px;
+  padding: 9px 16px;
+  margin-bottom: 4px;
+  color: rgba(255, 255, 255, 0.45);
+  background: none;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  width: 100%;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  transition: all var(--transition-fast);
+}
+.sidebar-collapse-btn:hover {
+  background-color: rgba(255,255,255,0.07);
+  color: rgba(255,255,255,0.85);
+}
+
+/* ── Resize handle — right edge of sidebar (desktop only) ────────────────── */
+.sidebar-resize-handle {
+  display: none; /* hidden on mobile */
+  position: absolute;
+  top: 0;
+  right: -4px;          /* slightly outside, centred on the edge */
+  width: 8px;
+  height: 100%;
+  cursor: ew-resize;
+  z-index: 200;
+  /* Subtle visual indicator on hover */
+  background: transparent;
+  transition: background 0.15s;
+}
+.sidebar-resize-handle::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 3px;            /* 1 px visible line centred in the 8px handle */
+  width: 2px;
+  height: 100%;
+  background: transparent;
+  transition: background 0.15s;
+  border-radius: 2px;
+}
+.sidebar-resize-handle:hover::after,
+.sidebar-resize-handle:active::after {
+  background: var(--color-accent-lime);
+  opacity: 0.6;
+}
+
+/* ── Icon-only mode (collapsed sidebar) ──────────────────────────────────── */
+.sidebar-icon-only .sidebar-link {
+  justify-content: center;
+  padding: 11px;
+  gap: 0;
+}
+.sidebar-icon-only .sidebar-footer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+.sidebar-icon-only .sidebar-collapse-btn {
+  justify-content: center;
+  padding: 9px;
+  gap: 0;
+}
+.sidebar-icon-only .sidebar-logout-btn {
+  justify-content: center;
+  padding: 11px;
+}
+
+/* ── Desktop-only overrides ───────────────────────────────────────────────── */
+@media (min-width: 769px) {
+  .sidebar-resize-handle { display: block; }
+  .sidebar-collapse-btn  { display: flex;  }
+}
+
 
 /* Main Content */
 .main-content {
@@ -1028,6 +1135,14 @@ label {
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
+.loading-spinner-large {
+  width: 44px;
+  height: 44px;
+  border: 3px solid rgba(198,242,76,0.2);
+  border-top-color: var(--color-accent-lime);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
 .loading-spinner-small {
   width: 20px;
   height: 20px;
@@ -1038,15 +1153,47 @@ label {
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 
+
+/* Shimmer skeleton for loading states */
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position:  200% 0; }
+}
+[style*="animation: shimmer"] {
+  background-image: linear-gradient(
+    90deg,
+    var(--color-border-subtle) 25%,
+    rgba(255,255,255,0.08) 50%,
+    var(--color-border-subtle) 75%
+  );
+  background-size: 200% 100%;
+}
+
+/* Live pulsing dot */
+.live-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--color-success);
+  animation: pulse-dot 1.5s ease-in-out infinite;
+}
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1;   transform: scale(1); }
+  50%       { opacity: 0.4; transform: scale(0.75); }
+}
+
+
 /* =============================================
    16. RESPONSIVE
    ============================================= */
 @media (max-width: 1024px) {
-  .sidebar { width: 220px; min-width: 220px; }
+  /* sidebar width is controlled by inline style on desktop — no override here */
   .page-content { padding: 24px; }
   .dashboard-charts-row { grid-template-columns: 1fr; }
   .settings-grid { grid-template-columns: 1fr; }
 }
+
 
 .mobile-menu-btn {
   display: none;
@@ -1064,18 +1211,20 @@ label {
   .mobile-menu-btn { display: flex; }
   
   .sidebar {
-    position: fixed;
-    top: 0;
-    left: -280px;
-    width: 260px;
-    height: 100vh;
+    position: fixed !important;
+    top: 0 !important;
+    left: -280px !important;
+    width: 260px !important;
+    min-width: 260px !important;
+    height: 100vh !important;
     z-index: 1000;
-    transition: left var(--transition-normal) ease;
+    transition: left var(--transition-normal) ease !important;
     padding: 24px 16px;
     box-shadow: var(--shadow-lg);
   }
   
   .sidebar.mobile-open {
+
     left: 0;
   }
 

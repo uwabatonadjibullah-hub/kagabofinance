@@ -13,7 +13,9 @@ import {
 import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 
-// Hook to subscribe to a collection
+// Hook to subscribe to a Firestore collection in real-time.
+// If the ordered query fails (e.g. missing index or field), it automatically
+// falls back to an unordered snapshot so charts never go blank.
 export const useCollection = (collectionName, orderByField = 'createdAt', orderDirection = 'desc') => {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -21,26 +23,66 @@ export const useCollection = (collectionName, orderByField = 'createdAt', orderD
 
   useEffect(() => {
     setLoading(true);
-    const q = query(collection(db, collectionName), orderBy(orderByField, orderDirection));
-    
-    const unsubscribe = onSnapshot(q, 
+    setError(null);
+
+    // Primary: ordered query
+    const orderedQuery = query(
+      collection(db, collectionName),
+      orderBy(orderByField, orderDirection)
+    );
+
+    let unsubscribeFallback = null;
+
+    const unsubscribeOrdered = onSnapshot(
+      orderedQuery,
       (snapshot) => {
-        const results = [];
-        snapshot.forEach((doc) => {
-          results.push({ id: doc.id, ...doc.data() });
-        });
+        const results = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
         setData(results);
         setLoading(false);
         setError(null);
       },
       (err) => {
-        console.error(`Error fetching ${collectionName}:`, err);
-        setError(err.message);
-        setLoading(false);
+        // The ordered query failed — most likely a missing index or the field
+        // doesn't exist on any document yet. Fall back to an unordered snapshot
+        // so the UI still receives live data.
+        console.warn(
+          `[useCollection] Ordered query on "${collectionName}" by "${orderByField}" failed: ${err.message}. Falling back to unordered snapshot.`
+        );
+
+        const fallbackQuery = collection(db, collectionName);
+        unsubscribeFallback = onSnapshot(
+          fallbackQuery,
+          (snapshot) => {
+            const results = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+            // Sort client-side if possible
+            results.sort((a, b) => {
+              const aVal = a[orderByField];
+              const bVal = b[orderByField];
+              if (aVal == null && bVal == null) return 0;
+              if (aVal == null) return 1;
+              if (bVal == null) return -1;
+              // Handle Firestore Timestamps
+              const aTime = aVal?.toMillis ? aVal.toMillis() : aVal;
+              const bTime = bVal?.toMillis ? bVal.toMillis() : bVal;
+              return orderDirection === 'desc' ? bTime - aTime : aTime - bTime;
+            });
+            setData(results);
+            setLoading(false);
+            setError(null);
+          },
+          (fallbackErr) => {
+            console.error(`[useCollection] Fallback query on "${collectionName}" also failed:`, fallbackErr);
+            setError(fallbackErr.message);
+            setLoading(false);
+          }
+        );
       }
     );
 
-    return () => unsubscribe();
+    return () => {
+      unsubscribeOrdered();
+      if (unsubscribeFallback) unsubscribeFallback();
+    };
   }, [collectionName, orderByField, orderDirection]);
 
   return { data, loading, error };
