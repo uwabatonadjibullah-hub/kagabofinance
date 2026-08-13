@@ -21,8 +21,7 @@ import {
   Shield,
   FileText,
   Menu,
-  ChevronsLeft,
-  ChevronsRight,
+  PanelLeft,
 } from 'lucide-react';
 
 const navItems = [
@@ -55,7 +54,6 @@ const DashboardLayout = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   /* ── Sidebar resize state ───────────────────────────────────────────────── */
-  // Initialise from localStorage so width persists across page refreshes
   const [sidebarWidth, setSidebarWidth] = useState(() => {
     try {
       const saved = localStorage.getItem(LS_KEY);
@@ -67,8 +65,6 @@ const DashboardLayout = () => {
     return SIDEBAR_DEFAULT;
   });
 
-  // "Collapsed" means the user clicked the toggle — we remember the previous
-  // width so we can restore it when they expand again.
   const [isCollapsed, setIsCollapsed]         = useState(false);
   const [isDraggingActive, setIsDraggingActive] = useState(false); // disables CSS transition during drag
   const prevWidthRef                          = useRef(sidebarWidth);
@@ -99,7 +95,7 @@ const DashboardLayout = () => {
     dragStartX.current   = e.clientX;
     dragStartWidth.current = isCollapsed ? COLLAPSED_WIDTH : sidebarWidth;
 
-    setIsDraggingActive(true);          // disable CSS transition for instant feedback
+    setIsDraggingActive(true);
     document.body.style.cursor     = 'ew-resize';
     document.body.style.userSelect = 'none';
   }, [isCollapsed, sidebarWidth]);
@@ -110,7 +106,6 @@ const DashboardLayout = () => {
       const delta    = e.clientX - dragStartX.current;
       const newWidth = Math.min(SIDEBAR_MAX, Math.max(SIDEBAR_MIN, dragStartWidth.current + delta));
 
-      // If the user was collapsed and drags right, exit collapsed state
       if (isCollapsed && delta > 20) {
         setIsCollapsed(false);
       }
@@ -120,9 +115,9 @@ const DashboardLayout = () => {
 
     const handleMouseUp = () => {
       if (!isDragging.current) return;
-      isDragging.current           = false;
-      setIsDraggingActive(false);        // re-enable CSS transition
-      document.body.style.cursor   = '';
+      isDragging.current             = false;
+      setIsDraggingActive(false);
+      document.body.style.cursor     = '';
       document.body.style.userSelect = '';
     };
 
@@ -134,10 +129,9 @@ const DashboardLayout = () => {
     };
   }, [isCollapsed]);
 
-  /* ── Collapse toggle ──────────────────────────────────────────────────── */
+  /* ── Collapse toggle (icon above logo, Gemini style) ───────────────────── */
   const handleCollapseToggle = () => {
     if (isCollapsed) {
-      // Restore previous width (or default if too narrow)
       const restore = prevWidthRef.current >= ICON_THRESHOLD ? prevWidthRef.current : SIDEBAR_DEFAULT;
       setSidebarWidth(restore);
       setIsCollapsed(false);
@@ -171,80 +165,75 @@ const DashboardLayout = () => {
         ref={sidebarRef}
         className={[
           'sidebar',
-          isMobileMenuOpen  ? 'mobile-open'      : '',
-          iconOnly          ? 'sidebar-icon-only' : '',
-          isDraggingActive  ? 'sidebar-dragging'  : '',
+          isMobileMenuOpen  ? 'mobile-open'       : '',
+          iconOnly          ? 'sidebar-icon-only'  : '',
+          isDraggingActive  ? 'sidebar-dragging'   : '',
         ].filter(Boolean).join(' ')}
         id="sidebar"
         style={{ width: `${effectiveWidth}px`, minWidth: `${effectiveWidth}px` }}
       >
-        {/* Brand / Logo */}
-        <div className="sidebar-brand">
-          {iconOnly ? (
-            /* Show tiny icon-sized logo when collapsed */
-            <img
-              src="/iconed_logo.jpg"
-              alt="KAGABO"
-              className="sidebar-logo-icon"
-            />
-          ) : (
-            <img
-              src="/iconed_logo.jpg"
-              alt="KAGABO Finance & Logistics"
-              className="sidebar-logo"
-            />
-          )}
-        </div>
-
-        {/* Nav */}
-        <nav className="sidebar-nav">
-          {navItems.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              className={({ isActive }) => `sidebar-link${isActive ? ' active' : ''}`}
-              id={`nav-${item.label.toLowerCase().replace(/\s+/g, '-')}`}
-              title={iconOnly ? item.label : undefined}
-            >
-              <item.icon size={20} style={{ flexShrink: 0 }} />
-              {!iconOnly && <span>{item.label}</span>}
-            </NavLink>
-          ))}
-        </nav>
-
-        {/* Footer */}
-        <div className="sidebar-footer">
-          {/* Collapse / expand toggle — desktop only (hidden on mobile via CSS) */}
+        {/* ── Sidebar Header: Collapse/Extend Icon (Gemini style) + Logo ───── */}
+        <div className="sidebar-top-header">
           <button
-            className="sidebar-collapse-btn"
+            className="sidebar-toggle-icon-btn"
             onClick={handleCollapseToggle}
             title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
             aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           >
-            {isCollapsed ? <ChevronsRight size={18} /> : <ChevronsLeft size={18} />}
-            {!iconOnly && <span>{isCollapsed ? 'Expand' : 'Collapse'}</span>}
-          </button>
-
-          <button
-            onClick={handleLogout}
-            className="sidebar-link sidebar-logout-btn"
-            id="nav-signout"
-            title={iconOnly ? 'Sign Out' : undefined}
-          >
-            <LogOut size={20} style={{ flexShrink: 0 }} />
-            {!iconOnly && <span>Sign Out</span>}
+            <PanelLeft size={20} />
           </button>
 
           {!iconOnly && (
-            <div className="sidebar-legal">
-              <NavLink to="/privacy-policy" className="sidebar-legal-link">
-                <Shield size={14} /> Privacy Policy
-              </NavLink>
-              <NavLink to="/terms-conditions" className="sidebar-legal-link">
-                <FileText size={14} /> Terms & Conditions
-              </NavLink>
+            <div className="sidebar-logo-wrapper">
+              <img
+                src="/iconed_logo.jpg"
+                alt="KAGABO Finance & Logistics"
+                className="sidebar-logo"
+              />
             </div>
           )}
+        </div>
+
+        {/* ── Continuous Scrollable Flow (No fixed space at bottom) ───────── */}
+        <div className="sidebar-scroll-content">
+          <nav className="sidebar-nav">
+            {navItems.map((item) => (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                className={({ isActive }) => `sidebar-link${isActive ? ' active' : ''}`}
+                id={`nav-${item.label.toLowerCase().replace(/\s+/g, '-')}`}
+                title={iconOnly ? item.label : undefined}
+              >
+                <item.icon size={20} style={{ flexShrink: 0 }} />
+                {!iconOnly && <span>{item.label}</span>}
+              </NavLink>
+            ))}
+          </nav>
+
+          {/* Footer Items (Flowing continuously after nav) */}
+          <div className="sidebar-footer-flow">
+            <button
+              onClick={handleLogout}
+              className="sidebar-link sidebar-logout-btn"
+              id="nav-signout"
+              title={iconOnly ? 'Sign Out' : undefined}
+            >
+              <LogOut size={20} style={{ flexShrink: 0 }} />
+              {!iconOnly && <span>Sign Out</span>}
+            </button>
+
+            {!iconOnly && (
+              <div className="sidebar-legal">
+                <NavLink to="/privacy-policy" className="sidebar-legal-link">
+                  <Shield size={14} /> Privacy Policy
+                </NavLink>
+                <NavLink to="/terms-conditions" className="sidebar-legal-link">
+                  <FileText size={14} /> Terms & Conditions
+                </NavLink>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* ── Resize handle (desktop only) ────────────────────────────── */}

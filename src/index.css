@@ -437,35 +437,69 @@ label {
   transition: none !important;
 }
 
-.sidebar-brand {
-  padding: 0 8px 24px;
-  border-bottom: 1px solid rgba(255,255,255,0.08);
-  margin-bottom: 16px;
+.sidebar-top-header {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 0 4px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  margin-bottom: 12px;
+  flex-shrink: 0;
+}
+
+.sidebar-toggle-icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+.sidebar-toggle-icon-btn:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+}
+
+.sidebar-logo-wrapper {
+  display: flex;
+  align-items: center;
+  background: #ffffff;
+  padding: 6px 12px;
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  width: fit-content;
+  max-width: 100%;
   overflow: hidden;
 }
 .sidebar-logo {
   width: 100%;
-  max-width: 180px;
+  max-width: 170px;
   height: auto;
+  max-height: 42px;
   object-fit: contain;
-  border-radius: 8px;
   display: block;
 }
-/* Icon-only logo (small square) */
-.sidebar-logo-icon {
-  width: 36px;
-  height: 36px;
-  object-fit: cover;
-  border-radius: 8px;
-  display: block;
-  margin: 0 auto;
+
+/* ── Continuous Scrollable Flow (No fixed bottom block) ─────────────────── */
+.sidebar-scroll-content {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  gap: 12px;
+  padding-right: 2px;
 }
 
 .sidebar-nav {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  flex: 1;
 }
 
 .sidebar-link {
@@ -497,10 +531,13 @@ label {
   font-weight: 600;
 }
 
-.sidebar-footer {
-  padding-top: 16px;
+.sidebar-footer-flow {
+  padding-top: 12px;
   border-top: 1px solid rgba(255,255,255,0.08);
-  margin-top: 16px;
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 .sidebar-logout-btn {
   color: rgba(255,255,255,0.5) !important;
@@ -508,31 +545,6 @@ label {
 .sidebar-logout-btn:hover {
   color: var(--color-danger) !important;
   background-color: rgba(225, 91, 91, 0.1) !important;
-}
-
-/* ── Collapse / expand toggle button ─────────────────────────────────────── */
-.sidebar-collapse-btn {
-  display: none; /* hidden on mobile */
-  align-items: center;
-  gap: 12px;
-  padding: 9px 16px;
-  margin-bottom: 4px;
-  color: rgba(255, 255, 255, 0.45);
-  background: none;
-  border: none;
-  border-radius: 10px;
-  cursor: pointer;
-  font-size: 13px;
-  font-weight: 500;
-  width: 100%;
-  text-align: left;
-  white-space: nowrap;
-  overflow: hidden;
-  transition: all var(--transition-fast);
-}
-.sidebar-collapse-btn:hover {
-  background-color: rgba(255,255,255,0.07);
-  color: rgba(255,255,255,0.85);
 }
 
 /* ── Resize handle — right edge of sidebar (desktop only) ────────────────── */
@@ -545,7 +557,6 @@ label {
   height: 100%;
   cursor: ew-resize;
   z-index: 200;
-  /* Subtle visual indicator on hover */
   background: transparent;
   transition: background 0.15s;
 }
@@ -567,32 +578,30 @@ label {
 }
 
 /* ── Icon-only mode (collapsed sidebar) ──────────────────────────────────── */
+.sidebar-icon-only .sidebar-top-header {
+  align-items: center;
+  padding: 0 0 12px;
+}
 .sidebar-icon-only .sidebar-link {
   justify-content: center;
   padding: 11px;
   gap: 0;
 }
-.sidebar-icon-only .sidebar-footer {
+.sidebar-icon-only .sidebar-footer-flow {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 4px;
 }
-.sidebar-icon-only .sidebar-collapse-btn {
-  justify-content: center;
-  padding: 9px;
-  gap: 0;
-}
 .sidebar-icon-only .sidebar-logout-btn {
   justify-content: center;
   padding: 11px;
 }
-
 /* ── Desktop-only overrides ───────────────────────────────────────────────── */
 @media (min-width: 769px) {
   .sidebar-resize-handle { display: block; }
-  .sidebar-collapse-btn  { display: flex;  }
 }
+
 
 
 /* Main Content */
