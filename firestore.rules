@@ -1,84 +1,122 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-  
-    // Helper functions for role-based access
+
+    // ─── Helper functions ────────────────────────────────────────────────────
     function isSignedIn() {
       return request.auth != null;
     }
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
     function getUserRole() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+      return getUserData().role;
+    }
+    function isApproved() {
+      return isSignedIn() && getUserData().status == 'approved';
     }
     function isOwner() {
-      return isSignedIn() && getUserRole() == 'owner';
+      return isApproved() && getUserRole() == 'owner';
     }
     function isManager() {
-      return isSignedIn() && (getUserRole() == 'manager' || getUserRole() == 'owner');
+      return isApproved() && (getUserRole() == 'manager' || getUserRole() == 'owner');
     }
     function isAccountant() {
-      return isSignedIn() && (getUserRole() == 'accountant' || getUserRole() == 'manager' || getUserRole() == 'owner');
+      return isApproved() && (getUserRole() == 'accountant' || getUserRole() == 'manager' || getUserRole() == 'owner');
     }
-    
-    // Default deny
+
+    // ─── Default deny ────────────────────────────────────────────────────────
     match /{document=**} {
       allow read, write: if false;
     }
-    
-    // Users collection
+
+    // ─── Users ───────────────────────────────────────────────────────────────
+    // All signed-in users can read (needed for role lookups and profile display).
+    // Users can create their own profile; only owners can delete.
+    // Users can update their own profile but cannot change role/status themselves.
     match /users/{userId} {
       allow read: if isSignedIn();
       allow create: if isSignedIn() && request.auth.uid == userId;
-      allow update: if isOwner() || (request.auth.uid == userId && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'status'])));
+      allow update: if isOwner()
+        || (isSignedIn() && request.auth.uid == userId
+            && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'status']));
       allow delete: if isOwner();
     }
-    
-    // Owner only collections
+
+    // ─── App Settings ────────────────────────────────────────────────────────
+    // All approved users can read settings (business name, currency, etc.).
     match /settings/{document=**} {
-      allow read: if isSignedIn();
+      allow read: if isApproved();
       allow write: if isOwner();
     }
+
+    // ─── Activity Logs ───────────────────────────────────────────────────────
+    // Any approved user can write logs; only owners can read them.
     match /activityLogs/{document=**} {
       allow read: if isOwner();
-      allow write: if isSignedIn(); // All roles can log activity, but only owners can read the full log
+      allow create: if isApproved();
+      allow update, delete: if isOwner();
     }
-    
-    // Manager collections (Inventory, Purchases, Logistics, Suppliers)
+
+    // ─── Notifications ───────────────────────────────────────────────────────
+    match /notifications/{document=**} {
+      allow read, write: if isApproved();
+    }
+
+    // ─── Inventory / Products ────────────────────────────────────────────────
+    // Accountants need read access (for sales form product selection).
+    // Accountants also need write access to update qty/totalItems during sales.
     match /products/{document=**} {
-      allow read: if isAccountant(); // Accountants need to read products to sell them
-      allow write: if isManager();
+      allow read: if isAccountant();
+      allow write: if isAccountant();  // managers add products; accountants update stock via sales
     }
     match /categories/{document=**} {
       allow read: if isAccountant();
       allow write: if isManager();
     }
+
+    // ─── Suppliers ───────────────────────────────────────────────────────────
     match /suppliers/{document=**} {
-      allow read: if isAccountant(); // Accountants might need to read suppliers for payments
+      allow read: if isAccountant();
       allow write: if isManager();
     }
+
+    // ─── Purchases ───────────────────────────────────────────────────────────
     match /purchases/{document=**} {
       allow read, write: if isManager();
     }
     match /purchaseItems/{document=**} {
       allow read, write: if isManager();
     }
+
+    // ─── Logistics / Deliveries ──────────────────────────────────────────────
     match /deliveries/{document=**} {
       allow read, write: if isManager();
     }
+    match /logistics/{document=**} {
+      allow read, write: if isManager();
+    }
+
+    // ─── Stock Movements ─────────────────────────────────────────────────────
     match /stockMovements/{document=**} {
       allow read: if isManager();
-      allow write: if isAccountant(); // Accountants can write stock movements through sales
+      allow write: if isAccountant();
     }
-    
-    // Accountant collections (Sales, Finance, Customers)
+
+    // ─── Customers ───────────────────────────────────────────────────────────
     match /customers/{document=**} {
       allow read, write: if isAccountant();
     }
+
+    // ─── Sales ───────────────────────────────────────────────────────────────
     match /sales/{document=**} {
       allow read, write: if isAccountant();
     }
     match /saleItems/{document=**} {
       allow read, write: if isAccountant();
     }
+
+    // ─── Finance ─────────────────────────────────────────────────────────────
     match /expenses/{document=**} {
       allow read, write: if isAccountant();
     }
@@ -91,13 +129,18 @@ service cloud.firestore {
     match /invoices/{document=**} {
       allow read, write: if isAccountant();
     }
+    match /finance/{document=**} {
+      allow read, write: if isAccountant();
+    }
+
+    // ─── Reports & Analytics ─────────────────────────────────────────────────
     match /reports/{document=**} {
       allow read: if isManager();
       allow write: if isManager();
     }
-    match /notifications/{document=**} {
-      allow read: if isSignedIn();
-      allow write: if isSignedIn();
+    match /analytics/{document=**} {
+      allow read: if isManager();
+      allow write: if isOwner();
     }
   }
 }

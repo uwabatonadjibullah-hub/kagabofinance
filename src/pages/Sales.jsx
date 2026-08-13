@@ -27,7 +27,26 @@ const Sales = () => {
   const calculatedTotal = parseInt(formData.amount || 0) * unitPrice;
   const availableQty = selectedProduct ? (selectedProduct.qty || 0) : 0;
   const availableItems = selectedProduct ? (selectedProduct.totalItems || availableQty * (selectedProduct.ipq || 1)) : 0;
-  const maxAllowed = formData.sellType === 'quantity' ? availableQty : availableItems;
+
+  // When editing, restore the original amount to compute the true available ceiling.
+  // e.g. if customer took 20 and 5 remain → editing allows up to 25 (20 + 5).
+  const originalSale = editingId ? sales.find(s => s.id === editingId) : null;
+  const originalSaleAmount = originalSale?.amount || 0;
+  const originalSaleType = originalSale?.sellType || formData.sellType;
+
+  // Compute how many original units match the current sellType to add back correctly
+  const origQtyEquivalent = (() => {
+    if (!originalSale) return 0;
+    if (originalSaleType === 'quantity' && formData.sellType === 'quantity') return originalSaleAmount;
+    if (originalSaleType === 'item'     && formData.sellType === 'item')     return originalSaleAmount;
+    if (originalSaleType === 'quantity' && formData.sellType === 'item')     return originalSaleAmount * (originalSale.ipq || selectedProduct?.ipq || 1);
+    if (originalSaleType === 'item'     && formData.sellType === 'quantity') return Math.floor(originalSaleAmount / (originalSale.ipq || selectedProduct?.ipq || 1));
+    return 0;
+  })();
+
+  const maxAllowed = editingId
+    ? (formData.sellType === 'quantity' ? availableQty + origQtyEquivalent : availableItems + origQtyEquivalent)
+    : (formData.sellType === 'quantity' ? availableQty : availableItems);
 
   const filtered = sales.filter(s =>
     (s.customer && s.customer.toLowerCase().includes(searchTerm.toLowerCase())) ||
@@ -214,6 +233,15 @@ const Sales = () => {
                 <span><strong>Selling:</strong> {formData.amount} {formData.sellType === 'quantity' ? 'boxes' : 'items'} of {selectedProduct.name}</span>
                 <span>@ <strong>RWF {unitPrice.toFixed(2)}</strong>/{formData.sellType === 'quantity' ? 'qty' : 'item'}</span>
                 <span style={{ fontWeight: 700, color: 'var(--color-primary-dark)' }}>Total: RWF {calculatedTotal.toFixed(2)}</span>
+                {editingId && originalSale && (
+                  <span style={{ marginLeft: 'auto', fontSize: '13px', color: 'var(--color-text-secondary)', borderLeft: '1px solid rgba(255,255,255,0.15)', paddingLeft: '12px' }}>
+                    Was: <strong>{originalSaleAmount}</strong> → Now: <strong>{formData.amount}</strong>
+                    &nbsp;|&nbsp;Stock after save:{' '}
+                    <strong style={{ color: (maxAllowed - parseInt(formData.amount || 0)) >= 0 ? 'var(--color-success)' : 'var(--color-danger)' }}>
+                      {maxAllowed - parseInt(formData.amount || 0)} {formData.sellType === 'quantity' ? 'boxes' : 'items'}
+                    </strong>
+                  </span>
+                )}
               </div>
             )}
             
